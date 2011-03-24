@@ -203,7 +203,7 @@ att 1218    Equinox
 att 1219    Compression
 att 1220    Format
 att 1221    Subject-occupation
-att 1222    Subject-function
+att 1222    Theme
 att 1223    Edition
 att 1224    GPO-Item-Number
 att 1225    Provider
@@ -261,7 +261,8 @@ att 8031    itype
 ## Fixed Fields and other special indexes
 att 9901    Extent
 att 8910    Koha-Auth-Number
-att 8911	Host-Item-Number
+#att 8911	Host-Item-Number
+att 8911    Methodology
 # record length according to the leader
 att 9905    llength
 att 9902    Summary 
@@ -371,3 +372,8 @@ att 9907    ln-subtitle
 
 # ByWater specific
 att 9950 Exhibitions-Note
+
+# Pacific-Specific
+att 9660    LocalCorporateName
+att 9661    LocalPersonalName
+att 1222    Theme

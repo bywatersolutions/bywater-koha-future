@@ -814,6 +814,8 @@
     <target_index>Index-term-uncontrolled:p</target_index>
     <target_index>Subject:w</target_index>
     <target_index>Subject:p</target_index>
+    <target_index>Theme:w</target_index>
+    <target_index>Theme:p</target_index>
   </index_subfields>
   <!--record.abs line 183: melm 653$9      Koha-Auth-Number    -->
   <index_subfields tag="653" subfields="9">
@@ -895,6 +897,10 @@
   </index_data_field>
   <index_subfields tag="662" subfields="9">
     <target_index>Koha-Auth-Number:w</target_index>
+  </index_subfields>
+  <index_subfields tag="690" subfields="a">
+    <target_index>Theme:w</target_index>
+    <target_index>Theme:p</target_index>
   </index_subfields>
   <!--record.abs line 197: melm 690$9      Koha-Auth-Number    -->
   <index_subfields tag="690" subfields="9">
@@ -1181,6 +1187,20 @@
   <index_subfields tag="785" subfields="z">
     <target_index>ISBN:w</target_index>
     <target_index>Identifier-standard:w</target_index>
+  </index_subfields>
+  <!-- 791$b: LocalCorporateName -->
+  <index_subfields tag="791" subfields="b">
+    <target_index>LocalCorporateName:w</target_index>
+    <target_index>LocalCorporateName:p</target_index>
+  </index_subfields>
+  <!-- 796$a, 796$e: LocalPersonalName -->
+  <index_subfields tag="796" subfields="a">
+    <target_index>LocalPersonalName:w</target_index>
+    <target_index>LocalPersonalName:p</target_index>
+  </index_subfields>
+  <index_subfields tag="796" subfields="e">
+    <target_index>LocalPersonalName:w</target_index>
+    <target_index>LocalPersonalName:p</target_index>
   </index_subfields>
   <!--record.abs line 242: melm 787$w      Record-control-number-->
   <index_subfields tag="787" subfields="w">
