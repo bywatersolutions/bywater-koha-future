@@ -1,0 +1,11 @@
+[% FOREACH bib IN bibs %]
+   <div class="newbook_detail">
+    <div class="bookcover">
+    [% IF ( OPACAmazonEnabled ) %][% IF ( OPACAmazonCoverImages ) %][% IF ( bib.OPACurlOpenInNewWindow ) %]<a href="http://www.amazon[% bib.AmazonTld %]/gp/reader/[% bib.normalized_isbn %]/ref=sib_dp_pt/002-7879865-0184864#reader-link" target="_blank"><img border="0" src="http://images.amazon.com/images/P/[% bib.normalized_isbn %].01.MZZZZZZZ.jpg" alt="Cover Image" /></a>[% ELSE %]<a href="http://www.amazon[% bib.AmazonTld %]/gp/reader/[% bib.normalized_isbn %]/ref=sib_dp_pt/002-7879865-0184864#reader-link"><img border="0" src="http://images.amazon.com/images/P/[% bib.normalized_isbn %].01.MZZZZZZZ.jpg" alt="Cover Image" /></a>[% END %][% END %][% END %]    
+    [% IF ( SyndeticsEnabled ) %][% IF ( SyndeticsCoverImages ) %][% IF ( bib.content_identifier_exists ) %][% IF ( using_https ) %]<img src="https://secure.syndetics.com/index.aspx?isbn=[% bib.normalized_isbn %]/[% ELSE %]<img src="http://www.syndetics.com/index.aspx?isbn=[% bib.normalized_isbn %]/[% END %]SC.GIF&amp;client=[% bib.SyndeticsClientCode %]&amp;type=xw10[% IF ( bib.normalized_upc ) %]&amp;upc=[% bib.normalized_upc %][% END %][% IF ( bib.normalized_oclc ) %]&amp;oclc=[% bib.normalized_oclc %][% END %]" alt="" />[% ELSE %]<span class="no-image">No cover image available</span>[% END %][% END %][% END %]
+    [% IF ( GoogleJackets ) %]<div style="block" title="[% bib.biblionumber |url %]" class="[% bib.normalized_isbn %]" id="gbs-thumbnail-preview"></div>[% END %]
+    [% IF ( BakerTaylorEnabled ) %][% IF ( bib.normalized_isbn ) %][% IF ( bib.OPACurlOpenInNewWindow ) %]<a href="https://[% bib.BakerTaylorBookstoreurl |html %][% bib.normalized_isbn %]" target="_blank"><img alt="See Baker &amp; Taylor" src="[% bib.BakerTaylorImageurl |html %][% bib.normalized_isbn %]" /></a>[% ELSE %]<a href="https://[% bib.BakerTaylorBookstoreurl |html %][% bib.normalized_isbn %]"><img alt="See Baker &amp; Taylor" src="[% bib.BakerTaylorImageurl |html %][% bib.normalized_isbn %]" /></a>[% END %][% END %][% END %]
+    </div>
+    <div class="newbook_title"><a href="/cgi-bin/koha/opac-detail.pl?biblionumber=[% bib.biblionumber %]">[% bib.title |html %][% IF ( bib.author ) %] by [% bib.author %][% END %]</a></div>
+   </div>
+[% END %]
