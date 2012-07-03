@@ -656,6 +656,11 @@ our $PERL_DEPS = {
         'usage'    => 'OpacSelfRegistration',
         'required' => '1',
         'min_ver'  => '0.22',
+      },
+    'Net::Printer' => {
+        'usage'    => 'Push to printer',
+        'required' => '0',
+        'min_ver'  => '1.11',
     },
     'File::Temp' => {
         'usage'    => 'Plugins',
