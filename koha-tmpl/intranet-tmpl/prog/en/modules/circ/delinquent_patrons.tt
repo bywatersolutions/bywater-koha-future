@@ -130,7 +130,7 @@
         <td>[% overdueloo.surname %]</td>
         <td>[% overdueloo.firstname %]</td>
         <td>[% IF ( overdueloo.phone ) %][% overdueloo.phone %][% ELSIF ( overdueloo.mobile ) %][% overdueloo.mobile %][% ELSIF ( overdueloo.phonepro ) %][% overdueloo.phonepro %][% END %]</td>
-        <td>[% IF ( overdueloo.email ) %][<a href="mailto:[% overdueloo.email %]?subject=Overdue: [% overdueloo.title |html %]">email</a>][% END %]</td>
+        <td>[% IF ( overdueloo.email ) %]<a href="mailto:[% overdueloo.email %]?subject=Overdue: [% overdueloo.title |html %]">[% overdueloo.email %]</a>[% END %]</td>
         <td>[% INCLUDE 'biblio-default-view.inc' biblionumber = overdueloo.biblionumber %][% overdueloo.title |html %]  [% overdueloo.subtitle %]</a> [% IF ( overdueloo.author ) %], by [% overdueloo.author %][% END %]
         <td>[% overdueloo.duedate %]</td>
         <td>[% overdueloo.replacementprice %]</td>
