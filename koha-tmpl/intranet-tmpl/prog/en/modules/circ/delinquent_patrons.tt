@@ -126,7 +126,7 @@
 
 <tbody>[% FOREACH overdueloo IN overdueloop %]
     <tr>
-        <td>[% overdueloo.cardnumber %]</td>
+        <td><a href="/cgi-bin/koha/members/moremember.pl?borrowernumber=[% overdueloo.borrowernumber %]">[% overdueloo.cardnumber %]</a></td>
         <td>[% overdueloo.surname %]</td>
         <td>[% overdueloo.firstname %]</td>
         <td>[% IF ( overdueloo.phone ) %][% overdueloo.phone %][% ELSIF ( overdueloo.mobile ) %][% overdueloo.mobile %][% ELSIF ( overdueloo.phonepro ) %][% overdueloo.phonepro %][% END %]</td>
