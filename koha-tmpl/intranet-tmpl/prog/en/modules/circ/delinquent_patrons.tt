@@ -107,7 +107,9 @@
 [% ELSE %]
 
 <h2>[% nnoverdue %] [% IF ( noverdue_is_plural ) %]Items[% ELSE %]Item[% END %]
-	 Overdue as of [% todaysdate %][% IF ( isfiltered ) %] (filtered)[% END %]</h2>
+[% IF (dateduefrom) %] from [% dateduefrom %][% END %]
+[% IF (datedueto) %] to [% datedueto %][% END %]
+</h2>
 
 <div class="sql"><pre>[% sql |html %]</pre></div>
 <div class="searchresults">
