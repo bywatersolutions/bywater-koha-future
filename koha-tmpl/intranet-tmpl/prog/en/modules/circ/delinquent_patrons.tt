@@ -118,7 +118,8 @@
     <th>First name</th>
     <th>Phone number</th>
     <th>Email address</th>
-    <th>Items List</th>
+    <th>Items list</th>
+    <th>Call number</th>
     <th>Overdue since</th>
     <th>Replacement cost</th>
     <th>Current fines owed</th>
@@ -132,6 +133,7 @@
         <td>[% IF ( overdueloo.phone ) %][% overdueloo.phone %][% ELSIF ( overdueloo.mobile ) %][% overdueloo.mobile %][% ELSIF ( overdueloo.phonepro ) %][% overdueloo.phonepro %][% END %]</td>
         <td>[% IF ( overdueloo.email ) %]<a href="mailto:[% overdueloo.email %]?subject=Overdue: [% overdueloo.title |html %]">[% overdueloo.email %]</a>[% END %]</td>
         <td>[% INCLUDE 'biblio-default-view.inc' biblionumber = overdueloo.biblionumber %][% overdueloo.title |html %]  [% overdueloo.subtitle %]</a> [% IF ( overdueloo.author ) %], by [% overdueloo.author %][% END %]
+		<td>[% overdueloo.itemcallnumber %]</td>
         <td>[% overdueloo.duedate %]</td>
         <td>[% overdueloo.replacementprice %]</td>
         <td>[% overdueloo.total_balance %]</td>
