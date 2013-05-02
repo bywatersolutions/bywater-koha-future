@@ -78,7 +78,7 @@ sub get_syndetics_index {
     ) unless !$content;
 
     my $syndetics_elements;
-    for my $available_type ('SUMMARY','TOC','FICTION','AWARDS1','SERIES1','SPSUMMARY','SPREVIEW', 'AVPROFILE', 'AVSUMMARY','DBCHAPTER','LJREVIEW','PWREVIEW','SLJREVIEW','CHREVIEW','BLREVIEW','HBREVIEW','KIREVIEW','CRITICASREVIEW','ANOTES') {
+    for my $available_type ('SUMMARY','TOC','FICTION','AWARDS1','SERIES1','SPSUMMARY','SPREVIEW', 'AVPROFILE', 'AVSUMMARY','DBCHAPTER','LJREVIEW','PWREVIEW','SLJREVIEW','CHREVIEW','BLREVIEW','HBREVIEW','KIREVIEW','NYREVIEW','CRITICASREVIEW','ANOTES') {
         if (exists $response->{$available_type} && $response->{$available_type} =~ /$available_type/) {
             $syndetics_elements->{$available_type} = $available_type;
         }
@@ -161,6 +161,7 @@ sub get_syndetics_reviews {
     {title => 'Booklist Review', file => 'BLREVIEW.XML', element => 'BLREVIEW'},
     {title => 'Horn Book Review', file => 'HBREVIEW.XML', element => 'HBREVIEW'},
     {title => 'Kirkus Book Review', file => 'KIREVIEW.XML', element => 'KIREVIEW'},
+    {title => 'New York Times Review', file => 'NYREVIEW.XML', element => 'NYREVIEW'},
     {title => 'Criticas Review', file => 'CRITICASREVIEW.XML', element => 'CRITICASREVIEW'},
     {title => 'Spanish Review', file => 'SPREVIEW.XML', element => 'SPREVIEW'},
     ];
