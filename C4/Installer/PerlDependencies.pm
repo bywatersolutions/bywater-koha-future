@@ -657,10 +657,20 @@ our $PERL_DEPS = {
         'required' => '1',
         'min_ver'  => '0.22',
       },
+    'Printer' => {
+        'usage'    => 'Push to printer',
+        'required' => '0',
+        'min_ver'  => '0.98',
+    },
     'Net::Printer' => {
         'usage'    => 'Push to printer',
         'required' => '0',
         'min_ver'  => '1.11',
+    },
+    'HTML::HTMLDoc' => {
+        'usage'    => 'Push to printer',
+        'required' => '0',
+        'min_ver'  => '0.10',
     },
     'File::Temp' => {
         'usage'    => 'Plugins',

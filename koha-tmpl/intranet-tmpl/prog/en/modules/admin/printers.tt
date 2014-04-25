@@ -10,6 +10,8 @@
 [% INCLUDE 'doc-head-close.inc' %]
 [% IF ( loop ) %]
 [% INCLUDE 'datatables.inc' %]
+<script type="text/javascript" src="[% interface %]/lib/jquery/plugins/dataTables.fnReloadAjax.js"></script>
+<script type="text/javascript" src="[% interface %]/lib/jquery/plugins/jquery.jeditable.mini.js"></script>
 <script>
 //<![CDATA[
     $(document).ready(function() {
@@ -21,107 +23,126 @@
             "sPaginationType": "full"
         }));
     });
+});
+
+    function fnClickAddPrinter(e, node) {
+        if (e.keyCode == 13) {
+
+            var printerName  = $('#printerName').val();
+            var printerQueue = $('#printerQueue').val()
+            var printerType  = $('#printerType').val()
+
+            /* If passed a printer source, add the printer to the db */
+            if (printerName) {
+                $.ajax({
+                    url: "/cgi-bin/koha/svc/printer",
+                    type: "POST",
+                    data: {
+                            "name"    : printerName,
+                            "queue"   : printerQueue,
+                            "type"    : printerType,
+                            "action"  : "add",
+                    },
+                    success: function(data){
+                                var newPrinter = data[0];
+                                var aRow = oTable.fnUpdate(
+                                    newPrinter,
+                                    node,
+                                    undefined,
+                                    false,
+                                    false
+                                );
+                                oTable.fnPageChange( 'last' );
+                                $('.add_printer_button').attr('onclick', 'fnClickAddRow()'); // re-enable add button
+                    }
+                });
+            }
+            else {
+                alert(_("Please supply a printer name."));
+            }
+        }
+        else if (e.keyCode == 27) {
+            if (confirm(_("Are you sure you want to cancel adding this printer?"))) {
+                oTable.fnDeleteRow(node);
+            }
+            else {
+                return;
+            }
+        }
+    }
+
+    function fnClickAddRow() {
+        $('.add_printer_button').removeAttr('onclick'); // disable add button once it has been clicked
+        var aRow = oTable.fnAddData(
+            [
+                'NA',
+                '<input id="printerName"  type="text" style="height:14px; width:99%" onkeydown="fnClickAddPrinter(event,this.parentNode.parentNode)"/>',
+                '<input id="printerQueue" type="text" style="height:14px; width:99%" onkeydown="fnClickAddPrinter(event,this.parentNode.parentNode)"/>',
+                '<input id="printerType"  type="text" style="height:14px; width:99%" onkeydown="fnClickAddPrinter(event,this.parentNode.parentNode)"/>',
+            ],
+            false
+        );
+        oTable.fnPageChange( 'last' );
+        $('#printerName').focus();
+    }
+
+    function fnClickDeleteRow() {
+        var idsToDelete = oTable.$('.selected').map(function() {
+              return this.id;
+        }).get().join(', ');
+        if (!idsToDelete) {
+            alert(_("No printers selected!"));
+        }
+        else if (confirm(_("Are you sure you wish to delete printer(s) ") + idsToDelete + "?")) {
+            oTable.$('.selected').each(function(){
+                    var printerID = $(this).attr('id');
+                        $.ajax({
+                            url: "/cgi-bin/koha/svc/printer",
+                            type: "POST",
+                            data: {
+                                    "id"        : printerID,
+                                    "action"    : "delete",
+                            },
+                            /* Delete the row from the datatable */
+                            success: function(){
+                                oTable.fnDeleteRow(this);
+                                oTable.fnReloadAjax(null, null, true);
+                            }
+                        });
+                });
+        }
+        else {
+            return;
+        }
+    }
 //]]>
 </script>
-[% END %]
 </head>
-<body id="admin_printers" class="admin">
+<body id="tools_printers" class="tools">
 [% INCLUDE 'header.inc' %]
 [% INCLUDE 'cat-search.inc' %]
 
-<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/admin/admin-home.pl">Administration</a> &rsaquo; [% IF ( add_form ) %][% IF ( searchfield ) %] <a href="/cgi-bin/koha/admin/printers.pl">Printers</a> &rsaquo; Modify printer '[% searchfield | html %]'[% ELSE %] <a href="/cgi-bin/koha/admin/printers.pl">Printers</a> &rsaquo; New printer[% END %][% END %]
-[% IF ( add_validate ) %] <a href="/cgi-bin/koha/admin/printers.pl">Printers</a> &rsaquo; Printer added[% END %]
-[% IF ( delete_confirm ) %] <a href="/cgi-bin/koha/admin/printers.pl">Printers</a> &rsaquo; Confirm deletion of printer '[% searchfield | html %]'[% END %]
-[% IF ( delete_confirmed ) %] <a href="/cgi-bin/koha/admin/printers.pl">Printers</a> &rsaquo; Printer deleted[% END %]
-[% IF ( else ) %]Printers[% END %]</div>
+<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/admin/admin-home.pl">Administration</a> &rsaquo; Printers</div>
 
-<div class="main container-fluid">
-    <div class="row">
-        <div class="col-sm-10 col-sm-push-2">
-            <main>
-
-[% IF ( add_form ) %]
-
-[% IF ( searchfield ) %]
-		<h1>Modify printer</h1>
-	[% ELSE %]
-		<h1>New printer</h1>
-	[% END %]
-        <form action="[% script_name | html %]" name="Aform" method="post" class="validated">
-        <input type="hidden" name="op" value="add_validate" />
-	[% IF ( searchfield ) %]
-		<input type="hidden" name="add" value="0" />
-	[% ELSE %]
-		<input type="hidden" name="add" value="1" />
-	[% END %]
-	<fieldset class="rows">
-<ol>	[% IF ( searchfield ) %]
-		<li>
-            <span class="label">Printer name: </span>
-				<input type="hidden" name="printername" id="" value="[% searchfield | html %]" />[% searchfield | html %]
-		</li>
-	[% ELSE %]
-		<li>
-            <label for="printername" class="required">Printer name: </label>
-                <input type="text" name="printername" id="printername" size="40" maxlength="40" class="required" required="required" />
-                <span class="required">Required</span>
-		</li>
-	[% END %]
-        	<li>
-            <label for="printqueue" class="required">Queue: </label>
-            <input type="text" name="printqueue" id="printqueue" size="20" maxlength="20" value="[% printqueue | html %]"  class="required" required="required" />
-            <span class="required">Required</span>
-		</li>
-        	<li>
-			<label for="printtype">Type: </label>
-            <input type="text" name="printtype" id="printtype" size="20" maxlength="20" value="[% printtype | html %]" />
-		</li></ol>
-        </fieldset>
-        <fieldset class="action"><input type="submit" value="Submit" /> <a class="cancel" href="/cgi-bin/koha/admin/printers.pl">Cancel</a></fieldset>
-        </form>
-
-[% END %]
-
-[% IF ( add_validate ) %]
-<h3>Printer added</h3>
-<form action="[% script_name | html %]" method="post">
-       <fieldset class="action"> <input type="submit" value="OK" /></fieldset>
-</form>
-[% END %]
-
-[% IF ( delete_confirm ) %]
-    <div class="dialog alert">
-        <h3>Confirm deletion of printer <em>[% searchfield | html %]</em></h3>
-
-        <table>
-            <tr>
-                <th scope="row">Printer: </th><td>[% searchfield | html %]</td>
-            </tr>
-            <tr>
-                <th scope="row">Queue: </th><td>[% printqueue | html %]</td>
-            </tr>
-            <tr>
-                <th scope="row">Type: </th><td>[% printtype | html %]</td>
-            </tr>
-        </table>
-
-        <form action="[% script_name | html %]" method="post">
-            <input type="hidden" name="op" value="delete_confirmed" />
-            <input type="hidden" name="searchfield" value="[% searchfield | html %]" />
-            <button type="submit" class="approve"><i class="fa fa-fw fa-check"></i> Yes, delete</button>
-        </form>
-        <form action="/cgi-bin/koha/admin/printers.pl" method="get">
-            <button type="submit" class="deny"><i class="fa fa-fw fa-remove"></i> No, do not delete</button>
-        </form>
-    </div>
-[% END %]
-
-[% IF ( delete_confirmed ) %]
-    <div class="dialog message">
-        <h3>Printer deleted</h3>
-        <form action="[% script_name | html %]" method="post">
-            <button type="submit" class="approve"><i class="fa fa-fw fa-check"></i> OK</button>
-        </form>
+<div id="doc3" class="yui-t2">
+    <div id="bd">
+        <div id="yui-main">
+            <div class="yui-b">
+                [% INCLUDE 'printers-toolbar.inc' %]
+                <h2>Printers</h2>
+                <table id="printers_editor">
+                    <thead>
+                        <tr>
+                            <th><span style="cursor: help" onclick="event.stopPropagation();alert(MSG_ID_HELP);">ID</span></th>
+                            <th>Name</th>
+                            <th>Server:Port</th>
+                            <th>Type</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    <div class="yui-b noprint">
     </div>
 
 [% END %]
@@ -131,43 +152,5 @@
 <div id="toolbar" class="btn-toolbar">
     <a class="btn btn-default" id="newprinter" href="/cgi-bin/koha/admin/printers.pl?op=add_form"><i class="fa fa-plus"></i> New printer</a>
 </div>
-
-<h2>Printers</h2>
-	[% IF ( searchfield ) %]
-		You searched for [% searchfield | html %]</span>
-	[% END %]
-
-[% IF ( loop ) %]
-    <table id="printerst">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Queue</th>
-                <th>Type</th>
-                <th>&nbsp;</th>
-            </tr>
-        </thead>
-        <tbody>
-		[% FOREACH loo IN loop %]
-        <tr>
-			<td>[% loo.printername | html %]</td>
-			<td>[% loo.printqueue | html %]</td>
-			<td>[% loo.printtype | html %]</td>
-            <td class="actions"><a class="btn btn-default btn-xs" href="[% loo.script_name | url %]?op=add_form&amp;searchfield=[% loo.printername |uri %]"><i class="fa fa-pencil"></i> Edit</a> <a class="btn btn-default btn-xs" href="[% loo.script_name | url %]?op=delete_confirm&amp;searchfield=[% loo.printername |uri %]"><i class="fa fa-trash"></i> Delete</a></td>
-		</tr>
-		[% END %]
-        </tbody>
-    </table>[% ELSE %]<div class="dialog message">No printers defined.</div>[% END %]
-[% END %]
-
-            </main>
-        </div> <!-- /.col-sm-10.col-sm-push-2 -->
-
-        <div class="col-sm-2 col-sm-pull-10">
-            <aside>
-                [% INCLUDE 'admin-menu.inc' %]
-            </aside>
-        </div> <!-- /.col-sm-2.col-sm-pull-10 -->
-     </div> <!-- /.row -->
 
 [% INCLUDE 'intranet-bottom.inc' %]

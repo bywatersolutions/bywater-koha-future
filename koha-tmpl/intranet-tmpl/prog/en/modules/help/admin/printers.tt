@@ -1,0 +1,34 @@
+[% INCLUDE 'help-top.inc' %]
+
+<h1>Printers</h1>
+
+<h2>Adding and modifying printers</h2>
+
+<p>Click on the 'Add printer' button to add a single printer; Press the &lt;Enter&gt; key to save the printer.</p>
+<p>Click on any field to edit the contents; Press the &lt;Enter&gt; key to save edit.</p>
+<p>Click on one or more printer IDs to select entire printers for deletion; Click the 'Delete printer(s)' button to delete selected printers.</p>
+
+<p>Printers defined in this area can be used to print automatic reserve notices</p>
+
+<h2>How printers are defined</h2>
+<p>Printers can be utilized in two ways, either by sending the data directly to a networked printer via lpr, or by printing to a printer set up on the Koha server via CUPS.</p>
+
+<h3>Printing via LPR</h3>
+<p>
+    To configure a printer for this mode, create a new printer in Koha and give it a name, and under the Queue / Server:Port field enter the printer address and the port the LPR service is running under ( usually port 515 ).
+</p>
+
+<h3>Printing via CUPS</h3>
+<p>
+    To configure a printer for this mode, simply enter the CUPS name for this printer in the Name field. No other options are needed.
+</p>
+
+<h2>Caveats</h2>
+<p>
+    Printing plain text is supported by both methods. When printing HTML, the output will be sent to the printer as PostScript. If you are printing via LPR, and you want to print HTML, you will need to ensure that your printer can recieve and print PostScript data.
+</p>
+<p>
+    For printing slips and notices, this behavior can be controlled via the "HTML message" flag of the HOLD_PLACED_PRINT notice. Leaving this checkbox unchecked will result in plain text being printed, whereas checking this checkbox will result in HTML converted to PostScript being printed.
+
+</p>
+[% INCLUDE 'help-bottom.inc' %]

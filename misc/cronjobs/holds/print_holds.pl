@@ -34,6 +34,7 @@ use Net::Printer;
 use C4::Context;
 use C4::Members qw(GetMember);
 use C4::Letters qw(GetPreparedLetter);
+use Koha::Database;
 
 my $help    = 0;
 my $test    = 0;
@@ -48,14 +49,12 @@ GetOptions(
 pod2usage(1) if $help;
 pod2usage(1) unless @printers;
 
+my $schema = Koha::Database->new()->schema();
+
 my %printers;
 foreach my $p (@printers) {
-    my ( $branchcode, $printer, $server, $port ) = split( /,/, $p );
-    my %options;
-    $options{'printer'} = $printer if ($printer);
-    $options{'server'}  = $server  if ($server);
-    $options{'port'}    = $port    if ($port);
-    $printers{$branchcode} = new Net::Printer(%options);
+    my ( $branchcode, $printer_id ) = split( /:/, $p );
+    $printers{$branchcode} = $schema->resultset('Printer')->find($printer_id);
 }
 
 my $dbh   = C4::Context->dbh;
@@ -65,17 +64,17 @@ $sth->execute();
 
 my $set_printed_query = "
     UPDATE reserves
-    SET printed = 1
+    SET printed = NOW()
     WHERE reserve_id = ?
 ";
 my $set_printed_sth = $dbh->prepare($set_printed_query);
 
 while ( my $hold = $sth->fetchrow_hashref() ) {
     if ($verbose) {
-        print "\nFound Notice to Print\n";
-        print "Borrowernumber: " . $hold->{'borrowernumber'} . "\n";
-        print "Biblionumber: " . $hold->{'biblionumber'} . "\n";
-        print "Branch: " . $hold->{'branchcode'} . "\n";
+        say "\nFound Notice to Print";
+        say "Borrowernumber: " . $hold->{'borrowernumber'};
+        say "Biblionumber: " . $hold->{'biblionumber'};
+        say "Branch: " . $hold->{'branchcode'};
     }
 
     my $borrower =
@@ -96,12 +95,14 @@ while ( my $hold = $sth->fetchrow_hashref() ) {
 
     if ( defined( $printers{ $hold->{branchcode} } ) ) {
         unless ($test) {
-            my $result =
-              $printers{ $hold->{'branchcode'} }
-              ->printstring( $letter->{'content'} );
-            my $error = $printers{ $hold->{'branchcode'} }->printerror();
+            my ( $success, $error ) = $printers{ $hold->{'branchcode'} }->print(
+                {
+                    data    => $letter->{content},
+                    is_html => $letter->{is_html},
+                }
+            );
 
-            unless ($error) {
+            if ($success) {
                 $set_printed_sth->execute( $hold->{'reserve_id'} );
             }
             else {
@@ -109,12 +110,12 @@ while ( my $hold = $sth->fetchrow_hashref() ) {
             }
         }
         else {
-            print "TEST MODE, notice will not be printed\n";
-            print $letter->{'content'} . "\n";
+            say "TEST MODE, notice will not be printed";
+            say $letter->{'content'};
         }
     }
     else {
-        print "WARNING: No printer defined for branchcode "
+        say "WARNING: No printer defined for branchcode "
           . $hold->{'branchcode'}
           if ($verbose);
     }
@@ -129,21 +130,21 @@ Print Holds
 
 =head1 SYNOPSIS
 
-print_holds.pl --printer <branchcode>,<printer>,<server>,<port>
+print_holds.pl --printer <branchcode>=<printer_id>
 
 =head1 OPTIONS
 
 =over 8
 
-=item B<-help>
+=item B<--help>
 
 Print a brief help message and exits.
 
-=item B<-printer>
+=item B<--printer>
 
-Adds a printer, the value is the branchcode, printer name, server name and server port separated by commas.
+Adds a printer to use in the format BRANCHCODE=PRINTER_ID.
 
-e.g. print_holds.pl --printer MPL,lp,printserver,515 --printer CPL,lp2,printserver,516
+e.g. print_holds.pl --printer MPL:1 --printer CPL:2
 
 would add printers for branchcodes MPL and CPL. If a printer is not defined for a given branch, notices for
 that branch will not be printed.

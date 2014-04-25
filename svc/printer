@@ -1,0 +1,114 @@
+#!/usr/bin/perl
+
+# Copyright 2014 ByWater Solutions
+# Copyright 2012 Foundations Bible College Inc.
+#
+# This file is part of Koha.
+#
+# Koha is free software; you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.
+#
+# Koha is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Koha; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+use strict;
+use warnings;
+
+use CGI;
+use JSON;
+use autouse 'Data::Dumper' => qw(Dumper);
+
+use C4::Auth;
+use C4::Context;
+
+my $cgi          = CGI->new;
+my $dbh          = C4::Context->dbh;
+my $sort_columns = [ "id", "source", "text", "timestamp" ];
+
+my ( $template, $borrowernumber, $cookie ) = get_template_and_user(
+    {
+        template_name   => "",
+        query           => $cgi,
+        type            => "intranet",
+        authnotrequired => 0,
+        flagsrequired   => { tools => 'edit_printers' },
+        debug           => 1,
+    }
+);
+
+my $params = $cgi->Vars;
+
+print $cgi->header('application/json; charset=utf-8');
+
+unless ( $params->{action} ) {
+    my $sth = $dbh->prepare("SELECT * FROM printers");
+    $sth->execute();
+
+    my $aaData = $sth->fetchall_arrayref;
+
+    print to_json(
+        {
+            iTotalRecords        => @$aaData,
+            iTotalDisplayRecords => @$aaData,
+            sEcho                => $params->{sEcho},
+            aaData               => $aaData,
+        },
+        { utf8 => 1 }
+    );
+}
+elsif ( $params->{action} eq 'add' ) {
+    my $sth = $dbh->prepare(
+        'INSERT INTO printers ( name, queue, type ) VALUES (?, ?, ?)');
+    $sth->execute( $params->{name}, $params->{queue}, $params->{type} );
+    if ( $sth->err ) {
+        warn
+          sprintf( 'Database returned the following error: %s', $sth->errstr );
+        exit 1;
+    }
+    my $new_printer_id = $dbh->{q{mysql_insertid}};    # ALERT: mysqlism here
+    $sth = $dbh->prepare('SELECT * FROM printers WHERE id = ?;');
+    $sth->execute($new_printer_id);
+    print to_json( $sth->fetchall_arrayref, { utf8 => 1 } );
+    exit 1;
+}
+elsif ( $params->{action} eq 'edit' ) {
+    my $aaData           = [];
+    my $editable_columns = [qw(name queue type)]
+      ; # pay attention to element order; these columns match the printers table columns
+
+    my $sth = $dbh->prepare(
+"UPDATE printers SET $editable_columns->[$params->{column}-1]  = ? WHERE id = ?;"
+    );
+    $sth->execute( $params->{value}, $params->{id} );
+    if ( $sth->err ) {
+        warn
+          sprintf( 'Database returned the following error: %s', $sth->errstr );
+        exit 1;
+    }
+
+    $sth = $dbh->prepare(
+"SELECT $editable_columns->[$params->{column}-1] FROM printers WHERE id = ?;"
+    );
+    $sth->execute( $params->{id} );
+    $aaData = $sth->fetchrow_array();
+    print Encode::encode( 'utf8', $aaData );
+
+    exit 1;
+}
+elsif ( $params->{action} eq 'delete' ) {
+    my $sth = $dbh->prepare("DELETE FROM printers WHERE id = ?;");
+    $sth->execute( $params->{id} );
+    if ( $sth->err ) {
+        warn
+          sprintf( 'Database returned the following error: %s', $sth->errstr );
+        exit 1;
+    }
+    exit 0;
+}
