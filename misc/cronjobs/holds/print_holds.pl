@@ -90,6 +90,7 @@ while ( my $hold = $sth->fetchrow_hashref() ) {
             'biblioitems' => $hold->{'biblionumber'},
             'items'       => $hold->{'itemnumber'},
             'borrowers'   => $borrower,
+            'reserves'    => $hold,
         }
     );
 
