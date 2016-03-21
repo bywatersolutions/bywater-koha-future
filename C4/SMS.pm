@@ -116,6 +116,13 @@ sub send_sms {
             %args,
         );
 
+        # TEMP hardcoded for RT 33100 - 20160321.jpw
+        $sender = SMS::Send->new( 'RedOxygen',
+                                 _accountid    => C4::Context->preference('SMSSendUsername'),
+                                 _password => C4::Context->preference('SMSSendPassword'),
+                                 _email => 'rkuiper@roundrocktexas.gov',
+                            );
+    
         # Send a message
         $sent = $sender->send_sms(
             to   => $params->{destination},
