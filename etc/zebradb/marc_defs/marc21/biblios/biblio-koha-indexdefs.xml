@@ -1314,6 +1314,11 @@
     <target_index>Koha-Auth-Number:w</target_index>
   </index_subfields>
 
+  <!-- BWS CUSTOM for Guggenheim -->
+  <index_subfields xmlns="http://www.koha-community.org/schemas/index-defs" tag="856" subfields="z">
+    <target_index>Electronic-Copy-Availability</target_index>
+  </index_subfields>
+
   <!-- Alternate-graphic-representation -->
   <index_subfields tag="880" subfields="a">
     <target_index>Alt-language:w</target_index>
