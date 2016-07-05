@@ -120,7 +120,7 @@ sub send_sms {
         $sender = SMS::Send->new( 'RedOxygen',
                                  _accountid    => C4::Context->preference('SMSSendUsername'),
                                  _password => C4::Context->preference('SMSSendPassword'),
-                                 _email => 'rkuiper@roundrocktexas.gov',
+                                 _email => 'rrpls@roundrocktexas.gov',
                             );
     
         # Send a message
