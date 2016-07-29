@@ -372,8 +372,14 @@ sub fine_items {
         }
     );
 
+    # No fees, we can stop here but the caller expects and arrayref
+    return \@fees unless @fees;
+
     $start = $start ? $start - 1 : 0;
-    $end   = $end   ? $end       : scalar @fees - 1;
+
+    my $fees_count = @fees;
+    $end = $end ? $end : $fees_count - 1;
+    $end = $fees_count - 1 if $end > $fees_count;
 
     my $av_field_template = $server ? $server->{account}->{av_field_template} : undef;
     $av_field_template ||= "[% accountline.description %] [% accountline.amountoutstanding | format('%.2f') %]";
