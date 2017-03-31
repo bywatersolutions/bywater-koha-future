@@ -1,3 +1,9 @@
+koha (16.11.05.01~washoe+20170331105542.d05d5879) stable; urgency=medium
+
+  * Building git snapshot.
+
+ -- root <root@changeme.bywatersolutions.com>  Fri, 31 Mar 2017 10:55:42 -0700
+
 koha (16.05.02) squeeze; urgency=medium
 
   * New upstream release (16.05.02)
