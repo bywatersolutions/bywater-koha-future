@@ -1,19 +1,21 @@
 [% INCLUDE 'doc-head-open.inc' %]
 <title>Koha &rsaquo; Circulation &rsaquo; Overdues Phone List</title>
 [% INCLUDE 'doc-head-close.inc' %]
-<script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.tablesorter.min.js"></script>
+[% INCLUDE 'datatables.inc' %]
 <script type="text/javascript" language="JavaScript">
 //<![CDATA[
      $(document).ready(function() {
          $('#resultlist > ul').tabs();
          $("th a").hide();
-         $.tablesorter.defaults.widgets = ['zebra'];
-         $("#overduest").tablesorter({[% IF ( dateformat == 'metric' ) %]
-            dateFormat: 'uk',[% END %]
-            sortList: [[1,0],[2,0]],
-             headers: { 7:{sorter:'digit'}, 8: { sorter: 'digit' } }
-        }); 
-      });
+//         $.tablesorter.defaults.widgets = ['zebra'];
+         $("#overduest").dataTable($.extend(true, {}, dataTablesDefaults, {
+                "sDom": 't',
+                "aoColumnDefs": [
+                    { "aTargets": [ -1 ], "bSortable": false, "bSearchable": false }
+                ],
+                "bPaginate": false
+            }));
+    	});
 //]]>
 </script>
 <script type="text/JavaScript" language="JavaScript">
@@ -166,31 +168,11 @@
 	<fieldset><legend>Date due:</legend>
 	<ol>
     <li><label for="dateduefrom">From:</label>
-	<input type="text" id="dateduefrom" name="dateduefrom" size="10" value="[% dateduefrom %]" />
-	<img src="[% themelang %]/lib/calendar/cal.gif" id="dateduefrom_button" alt="Show Calendar" />
-	<script language="JavaScript" type="text/javascript">
-	    Calendar.setup(
-	    {
-		inputField : "dateduefrom",
-		ifFormat : "[% DHTMLcalendar_dateformat %]",
-		button : "dateduefrom_button"
-	    }
-	    );
-	</script>
+	<input type="text" id="dateduefrom" name="dateduefrom" class="datepicker" size="10" value="[% dateduefrom %]" />
 	</li>
 	<li>
 	<label for="datedueto">To:</label>
-	<input type="text" id="datedueto" name="datedueto" size="10" value="[% datedueto %]" />
-	<img src="[% themelang %]/lib/calendar/cal.gif" id="datedueto_button" alt="Show Calendar" />
-	<script language="JavaScript" type="text/javascript">
-	    Calendar.setup(
-	    {
-		inputField : "datedueto",
-		ifFormat : "[% DHTMLcalendar_dateformat %]",
-		button : "datedueto_button"
-	    }
-	    );
-	</script>
+	<input type="text" id="datedueto" name="datedueto" class="datepicker" size="10" value="[% datedueto %]" />
     </li>
     </ol></fieldset>
     <ol>
@@ -253,9 +235,9 @@
     <label>Library of the patron:</label><select name="branch" id="branch">
         <option value="">Any</option>
       [% FOREACH branchloo IN branchloop %]
-        [% IF ( branchloo.selected ) %]
-        <option value="[% branchloo.value |html %]" selected="selected">[% branchloo.branchname %]</option>[% ELSE %]
-        <option value="[% branchloo.value |html %]">[% branchloo.branchname %]</option>[% END %]
+        [% IF ( branchloo.branchcode == branchfilter ) %]
+        <option value="[% branchloo.branchcode |html %]" selected="selected">[% branchloo.branchname %]</option>[% ELSE %]
+        <option value="[% branchloo.branchcode |html %]">[% branchloo.branchname %]</option>[% END %]
       [% END %]
       </select>
     </li>

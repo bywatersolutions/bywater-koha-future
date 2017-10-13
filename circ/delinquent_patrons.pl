@@ -25,12 +25,12 @@ use C4::Context;
 use C4::Output;
 use CGI qw(-oldstyle_urls);
 use C4::Auth;
-use C4::Branch;
 use C4::Debug;
-use C4::Dates qw/format_date format_date_in_iso/;
 use C4::Members;
 use Date::Calc qw/Today Add_Delta_YMD/;
 use Text::CSV_XS;
+use Koha::DateUtils;
+use Koha::Libraries;
 
 my $input = new CGI;
 my $order           = $input->param('order') || 'borrower';
@@ -41,11 +41,12 @@ my $itemtypefilter  = $input->param('itemtype') || '';
 my $borflagsfilter  = $input->param('borflag') || '';
 my $branchfilter    = $input->param('branch') || '';
 my $op              = $input->param('op') || '';
-my $dateduefrom = format_date_in_iso($input->param( 'dateduefrom' )) || '';
-my $datedueto   = format_date_in_iso($input->param( 'datedueto' )) || '';
+my $dateduefrom = dt_from_string($input->param( 'dateduefrom' )) || '';
+my $datedueto   = dt_from_string($input->param( 'datedueto' )) || '';
 my $isfiltered      = $op =~ /apply/i && $op =~ /filter/i;
 my $noreport        = C4::Context->preference('FilterBeforeOverdueReport') && ! $isfiltered && $op ne "csv";
 
+#FIXME can prob be deleted - using dt from string should go to today's date if blank
 if ($dateduefrom eq '' and $datedueto eq '') {
     my ( $year, $month, $day ) = Today();
     $dateduefrom = sprintf("%-04.4d-%-02.2d-%02.2d", Add_Delta_YMD($year, $month, $day,   0, 0, -84));
@@ -54,7 +55,7 @@ if ($dateduefrom eq '' and $datedueto eq '') {
 
 my ( $template, $loggedinuser, $cookie ) = get_template_and_user(
     {
-        template_name   => "circ/delinquent_patrons.tmpl",
+        template_name   => "circ/delinquent_patrons.tt",
         query           => $input,
         type            => "intranet",
         authnotrequired => 0,
@@ -208,10 +209,9 @@ if (@patron_attr_filter_loop) {
     }
 }
 
-
 $template->param(
     patron_attr_header_loop => [ map { { header => $_->{description} } } grep { ! $_->{isclone} } @patron_attr_filter_loop ],
-    branchloop   => GetBranchesLoop($branchfilter, $onlymine),
+    branchloop   => scalar Koha::Libraries->search(),
     branchfilter => $branchfilter,
     borcatloop=> \@borcatloop,
     itemtypeloop => \@itemtypeloop,
@@ -219,10 +219,11 @@ $template->param(
     borname => $bornamefilter,
     order => $order,
     showall => $showall,
-    DHTMLcalendar_dateformat => C4::Dates->DHTMLcalendar(),
-    dateduefrom => format_date($dateduefrom),
-    datedueto   => format_date($datedueto),
+    dateduefrom => output_pref({dt => $dateduefrom, dateonly => 1 }),
+    datedueto   => output_pref({dt => $datedueto, dateonly => 1 }),
 );
+
+#    DHTMLcalendar_dateformat => C4::Dates->DHTMLcalendar(),
 
 if ($noreport) {
     # la de dah ... page comes up presto-quicko
@@ -327,11 +328,11 @@ if ($noreport) {
         $total = $balance_cache{$data->{borrowernumber}};
 
         push @overduedata, {
-            duedate                => format_date($data->{date_due}),
+            duedate                => output_pref({str => $data->{date_due}}),
             borrowernumber         => $data->{borrowernumber},
             barcode                => $data->{barcode},
             itemnum                => $data->{itemnumber},
-            issuedate              => format_date($data->{issuedate}),
+            issuedate              => output_pref({str => $data->{issuedate}}),
             borrowertitle          => $data->{borrowertitle},
             surname                => $data->{surname},
             firstname              => $data->{firstname},
@@ -364,7 +365,7 @@ if ($noreport) {
     print STDERR ">>> order is $order, patrorder is $patrorder, sortorder is $sortorder\n" if $debug;
 
     if (my @attrtype = grep { $_->{'code'} eq $patrorder } @patron_attr_filter_loop) {        # sort by patron attrs perhaps?
-        my $ordinal = $attrtype[0]{ordinal};
+        our $ordinal = $attrtype[0]{ordinal};
         print STDERR ">>> sort ordinal is $ordinal\n" if $debug;
 
         sub patronattr_sorter_asc {
@@ -396,7 +397,7 @@ if ($noreport) {
 
     $template->param(
         csv_param_string        => $csv_param_string,
-        todaysdate              => format_date($todaysdate),
+        todaysdate              => output_pref({str => $todaysdate}),
         overdueloop             => \@overduedata,
         nnoverdue               => scalar(@overduedata),
         noverdue_is_plural      => scalar(@overduedata) != 1,
