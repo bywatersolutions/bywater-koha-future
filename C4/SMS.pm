@@ -109,12 +109,12 @@ sub send_sms {
 
     eval {
         # Create a sender
-        $sender = SMS::Send->new(
-            $driver,
-            _login    => C4::Context->preference('SMSSendUsername'),
-            _password => C4::Context->preference('SMSSendPassword'),
-            %args,
-        );
+#        $sender = SMS::Send->new(
+#            $driver,
+#            _login    => C4::Context->preference('SMSSendUsername'),
+#            _password => C4::Context->preference('SMSSendPassword'),
+#            %args,
+#        );
 
         # TEMP hardcoded for RT 33100 - 20160321.jpw
         $sender = SMS::Send->new( 'RedOxygen',
