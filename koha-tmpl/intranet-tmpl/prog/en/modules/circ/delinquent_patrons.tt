@@ -88,7 +88,7 @@
 </style>
 [% INCLUDE 'calendar.inc' %]
 </head>
-<body>
+<body id="delinquent_patrons" class="circ">
 [% INCLUDE 'header.inc' %]
 [% INCLUDE 'circ-search.inc' %]
 
