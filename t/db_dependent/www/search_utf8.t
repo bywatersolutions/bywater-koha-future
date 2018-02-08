@@ -133,6 +133,7 @@ sub test_search{
 
     # -------------------------------------------------- LOAD RECORD
 
+    warn "INTRANET: $intranet";
     $agent->get_ok( "$intranet/cgi-bin/koha/mainpage.pl", 'connect to intranet' );
     $agent->form_name('loginform');
     $agent->field( 'password', $password );

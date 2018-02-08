@@ -301,6 +301,7 @@ production installation.
 =cut
 
 my $target_map = {
+  './.travis.yml'               => 'NONE',
   './about.pl'                  => 'INTRANET_CGI_DIR',
   './acqui'                     => 'INTRANET_CGI_DIR',
   './admin'                     => 'INTRANET_CGI_DIR',

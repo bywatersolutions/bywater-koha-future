@@ -1,0 +1,56 @@
+sudo: required
+
+jobs:
+  include:
+    - stage: run unit tests
+      env: NAME="Run unit tests"
+      language: generic
+      services:
+        - docker
+      before_install:
+        - export KOHA_VER="$(cat Koha.pm | grep '$VERSION =')" && export KOHA_VER=${KOHA_VER%\"*} && export KOHA_VER=${KOHA_VER##*\"} && echo $KOHA_VER
+        # Grab the Koha version from Koha.pm
+        - IFS='.' read -ra VER_PARTS <<< "$KOHA_VER"
+        - export KOHA_MAJOR=${VER_PARTS[0]}
+        - export KOHA_MINOR=${VER_PARTS[1]}
+        # If the minor version is even, assume we are on master
+        - if [ $((KOHA_MINOR%2)) -eq 0 ]; then export KOHA_BRANCH='master'; else export KOHA_BRANCH="$KOHA_MAJOR.$KOHA_MINOR"; fi
+        - echo $KOHA_MAJOR
+        - echo $KOHA_MINOR
+        - echo $KOHA_BRANCH
+        - cd .. # Now set up koha-testing-docker
+        - ls -alh
+        - pwd
+        - export SYNC_REPO=/home/travis/build/bywatersolutions/bywater-koha # Needed for koha-testing-docker
+        - export LOCAL_USER_ID="$(id -u)" # Needed for koha-testing-docker
+        - git clone https://gitlab.com/koha-community/koha-testing-docker.git
+        - cd koha-testing-docker
+        - git checkout origin/${KOHA_BRANCH} # Check out the correct koha-testing-docker branch
+        - cp env/defaults.env .env
+        - docker-compose build
+        - sudo sysctl -w vm.max_map_count=262144
+      script:
+        - export KOHA_INTRANET_URL="http://127.0.0.1:8081"
+        - export KOHA_MARC_FLAVOUR="marc21"
+        - export RUN_TESTS_AND_EXIT="yes"
+        - docker-compose down
+        - docker-compose run koha
+        - cat /home/travis/build/bywatersolutions/bywater-koha/testing.success
+        - echo ${TRAVIS_BRANCH}
+
+    - stage: build release notes, rebase custom branches
+      env: NAME="Build release notes"
+      language: generic
+      services:
+        - docker
+      script:
+        - docker run --env DEBUG=0 --env UPLOAD=1 --env GITHUB_TOKEN=${GITHUB_TOKEN} --env KOHA_BRANCH=${TRAVIS_BRANCH} kylemhall/bywater-koha-release-notes-generator
+
+    - stage: build release notes, rebase custom branches
+      env: NAME="Rebase custom code bases"
+      if: branch =~ ^bywater-v
+      language: generic
+      services:
+        - docker
+      script:
+        - docker run --mount type=bind,source=/home/travis/build/bywatersolutions/bywater-koha,target=/kohaclone -e DO_IT=1 -e GITHUB_TOKEN=${GITHUB_TOKEN} -e TRAVIS_BRANCH=${TRAVIS_BRANCH} kylemhall/bywater-koha-custom-rebaser
