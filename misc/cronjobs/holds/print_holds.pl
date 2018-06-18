@@ -32,9 +32,9 @@ use Pod::Usage;
 use Net::Printer;
 
 use C4::Context;
-use C4::Members qw(GetMember);
 use C4::Letters qw(GetPreparedLetter);
 use Koha::Database;
+use Koha::Patrons;
 
 my $help    = 0;
 my $test    = 0;
@@ -77,8 +77,7 @@ while ( my $hold = $sth->fetchrow_hashref() ) {
         say "Branch: " . $hold->{'branchcode'};
     }
 
-    my $borrower =
-      C4::Members::GetMember( 'borrowernumber' => $hold->{'borrowernumber'} );
+    my $patron = Koha::Patrons->find( $hold->{borrowernumber} );
 
     my $letter = GetPreparedLetter(
         module      => 'reserves',
@@ -89,7 +88,7 @@ while ( my $hold = $sth->fetchrow_hashref() ) {
             'biblio'      => $hold->{'biblionumber'},
             'biblioitems' => $hold->{'biblionumber'},
             'items'       => $hold->{'itemnumber'},
-            'borrowers'   => $borrower,
+            'borrowers'   => $patron->unblessed,
             'reserves'    => $hold,
         }
     );
