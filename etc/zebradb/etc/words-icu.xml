@@ -3,6 +3,8 @@
   <transliterate rule="{ Œ > oe "/>
   <transliterate rule="{ æ > ae "/>
   <transliterate rule="{ Æ > ae "/>
+  <transliterate rule="{ ž > z "/>
+  <transliterate rule="{ Ž > z "/>
   <transliterate rule="\'>\ "/>
   <transliterate rule="\u2019>\ "/>
   <transliterate rule="\u02BC>\ "/>
