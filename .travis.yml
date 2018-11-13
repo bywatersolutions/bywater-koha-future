@@ -2,7 +2,7 @@ sudo: required
 
 jobs:
   include:
-    - stage: run unit tests
+    - stage: Run unit tests, build release notes, rebase custom branches
       env: NAME="Run unit tests"
       language: generic
       services:
@@ -38,7 +38,7 @@ jobs:
         - cat /home/travis/build/bywatersolutions/bywater-koha/testing.success
         - echo ${TRAVIS_BRANCH}
 
-    - stage: build release notes, rebase custom branches
+    - stage: Run unit tests, build release notes, rebase custom branches
       env: NAME="Build release notes"
       language: generic
       services:
@@ -46,7 +46,7 @@ jobs:
       script:
         - docker run --env DEBUG=0 --env UPLOAD=1 --env GITHUB_TOKEN=${GITHUB_TOKEN} --env KOHA_BRANCH=${TRAVIS_BRANCH} kylemhall/bywater-koha-release-notes-generator
 
-    - stage: build release notes, rebase custom branches
+    - stage: Run unit tests, build release notes, rebase custom branches
       env: NAME="Rebase custom code bases"
       if: branch =~ ^bywater-v
       language: generic
