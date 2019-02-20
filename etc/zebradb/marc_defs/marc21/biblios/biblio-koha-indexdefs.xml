@@ -665,6 +665,11 @@
   <index_subfields tag="541" subfields="e">
     <target_index>Accession-number:w</target_index>
   </index_subfields>
+  <!-- Exhibitions-Note -->
+  <index_data_field tag="585">
+    <target_index>Exhibitions-Note:w</target_index>
+    <target_index>Exhibitions-Note:p</target_index>
+  </index_data_field>
   <!-- Awards -->
   <index_subfields tag="586" subfields="a">
     <target_index>Awards:w</target_index>

@@ -1094,9 +1094,15 @@ sub getIndexes{
                     'diss',
                     'dtlm',
                     'EAN',
-# BWS Custom for Guggenheim
+
+                    # BWS Custom for Guggenheim
                     'Electronic-Copy-Availability',
                     'eca',
+
+                    # BWS Custom 585
+                    'exhibition',
+                    'Exhibitions-Note',
+
                     'extent',
                     'fic',
                     'fiction',
