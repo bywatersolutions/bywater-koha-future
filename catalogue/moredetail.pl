@@ -244,6 +244,8 @@ foreach my $item (@items){
         }
     );
 
+    $item_info->{nomod} = !$patron->can_edit_item( $item );
+
     push @item_data, $item_info;
 }
 
