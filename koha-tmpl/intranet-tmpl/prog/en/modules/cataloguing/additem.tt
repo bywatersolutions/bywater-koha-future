@@ -139,7 +139,7 @@
                         [% ELSIF ( item.$attribute && ( attribute == 'price' || attribute == 'replacementprice' ) ) %]
                             <td class="[% can_mod %]" data-order="[% item.$attribute | html %]">[% item.$attribute | $Price %]</td>
                         [% ELSE %]
-                            <td class="[% can_mod %]" [% item.$attribute | html %]</td>
+                            <td class="[% can_mod %]">[% item.$attribute | html %]</td>
                         [% END %]
                     [% END %]
                     </tr>
