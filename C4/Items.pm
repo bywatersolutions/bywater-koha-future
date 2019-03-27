@@ -1727,10 +1727,8 @@ sub ItemSafeToDelete {
     if ($item->checkout) {
         $status = "book_on_loan";
     }
-    elsif ( defined C4::Context->userenv
-        and !C4::Context->IsSuperLibrarian()
-        and C4::Context->preference("IndependentBranches")
-        and ( C4::Context->userenv->{branch} ne $item->homebranch ) )
+    elsif ( defined C4::Context->userenv and defined C4::Context->userenv->{number}
+         and !Koha::Patrons->find( C4::Context->userenv->{number} )->can_edit_item( $item ) )
     {
         $status = "not_same_branch";
     }
