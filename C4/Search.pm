@@ -1547,10 +1547,10 @@ sub buildQuery {
         # OR every member of the group
         elsif ( $this_limit =~ /mc/ ) {
             my ($k,$v) = split(/:/, $this_limit,2);
-            if ( $k !~ /mc-i(tem)?type/ ) {
+            if ( $k !~ /mc-i(tem)?type/ && $v !~ /[a-zA-Z0-9]/ ) {
                 # in case the mc-ccode value has complicating chars like ()'s inside it we wrap in quotes
-                $this_limit =~ tr/"//d;
-                $this_limit = $k.":'".$v."'";
+                $v =~ tr/"//d;
+                $this_limit = qq{$k:'$v'};
             }
 
             $group_OR_limits{$k} .= " or " if $group_OR_limits{$k};
