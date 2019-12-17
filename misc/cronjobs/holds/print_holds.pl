@@ -54,7 +54,7 @@ my $schema = Koha::Database->new()->schema();
 my %printers;
 foreach my $p (@printers) {
     my ( $branchcode, $printer_id ) = split( /:/, $p );
-    $printers{$branchcode} = $schema->resultset('Printer')->find($printer_id);
+    $printers{$branchcode} = $schema->resultset('Printer')->find({ id => $printer_id });
 }
 
 my $dbh   = C4::Context->dbh;

@@ -96,7 +96,7 @@ sub print {
         my ( $server, $port ) = split( /:/, $self->printqueue() );
 
         my $printer = new Net::Printer(
-            printer     => $self->printernname(),
+            printer     => $self->printername(),
             server      => $server,
             port        => $port,
             lineconvert => "YES"
