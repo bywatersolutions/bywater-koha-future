@@ -45,7 +45,7 @@
         [% IF ( bnotes ) %]<li><span class="label">Notes:</span> [% bnotes | html %]</li>[% END %]
         <li><span class="label">No. of items:</span> [% count | html %]&nbsp;[% IF ( hiddencount ) %]total ([% showncount | html %] shown / [% hiddencount | html %] hidden) 
 <a href="/cgi-bin/koha/catalogue/moredetail.pl?biblionumber=[% biblionumber | uri %]&amp;showallitems=1">Show all items</a>[% END %]</li>
-	<li><span class="label">Circulation log:</span> <a href="/cgi-bin/koha/tools/viewlog.pl?do_it=1&amp;modules=circulation&amp;info=[% biblionumber %]&amp;src=circ">View circulation log of all items for this bib</a>&nbsp;</li>
+	<li><span class="label">Circulation log:</span> <a href="/cgi-bin/koha/tools/viewlog.pl?do_it=1&amp;modules=circulation&amp;info=[% biblionumber | $raw %]&amp;src=circ">View circulation log of all items for this bib</a>&nbsp;</li>
     </ol>
     </div>
 
