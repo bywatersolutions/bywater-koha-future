@@ -261,5 +261,8 @@ __PAZPAR2_TOGGLE_XML_POST__
  -->
  </koha_xslt_security>
 
+ <!-- See z3950_responder.pl for available options. The options -c, -u and -p are already passed automatically by koha-z3950-responder -->
+ <z3950_responder_options>--add-item-status k -t 5</z3950_responder_options>
+
 </config>
 </yazgfs>
