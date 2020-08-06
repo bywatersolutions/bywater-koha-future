@@ -393,6 +393,14 @@ if [ $# -gt 0 ]; then
             export DEV_INSTALL
             export KOHA_HOME
             PERL5LIB=$PERL5LIB:$KOHA_HOME/installer:$KOHA_HOME/lib/installer
+
+            for dir in $(xmlstarlet sel -t -v 'yazgfs/config/pluginsdir' "/etc/koha/sites/${name}/koha-conf.xml"); do
+                PERL5LIB=$PERL5LIB:$dir
+                for lib in $(find $dir -name 'lib'); do
+                    PERL5LIB=$PERL5LIB:$lib
+                done;
+            done;
+
             # If debug mode is enabled, add the debugger lib path
             # to PERL5LIB if appropriate
             if [ "$debug_mode" = "yes" ]; then
