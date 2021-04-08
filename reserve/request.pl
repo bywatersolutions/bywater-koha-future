@@ -70,7 +70,7 @@ my $showallitems = $input->param('showallitems');
 my $pickup = $input->param('pickup');
 
 my $pickup_branch = Koha::Libraries->find( $pickup );
-unless ( $pickup_branch->pickup_location ) {
+unless ( $pickup_branch && $pickup_branch->pickup_location ) {
     $pickup_branch = Koha::Libraries->search({ pickup_location => 1 })->next;
     $pickup = $pickup_branch ? $pickup_branch->id : undef;
 }
