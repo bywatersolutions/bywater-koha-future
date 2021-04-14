@@ -262,15 +262,17 @@ jobs:
                   asset_name: ${{ steps.extracted_variables.outputs.KOHA_BRANCH }}.zip
                   asset_content_type: application/zip
 
-            - uses: bywatersolutions/action-slack@v3
+            - name: Send job status Slack alert to DevOps channel
+              uses: bywatersolutions/action-slack@v3
               with:
                 status: ${{ job.status }}
                 fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
               env:
                 SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DEVOPS_WEBHOOK }} # required
-              if: always() # Pick up events even if the job fails or is canceled.
+              if: startsWith( github.ref, 'refs/heads/bywater-v' )
 
-            - uses: bywatersolutions/action-slack@v3
+            - name: Send job status Slack alert to Kyle 
+              uses: bywatersolutions/action-slack@v3
               with:
                 status: ${{ job.status }}
                 fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
@@ -278,7 +280,8 @@ jobs:
                 SLACK_WEBHOOK_URL: ${{ secrets.SLACK_KYLE_WEBHOOK }} # required
               if: always() # Pick up events even if the job fails or is canceled.
 
-            - uses: bywatersolutions/action-slack@v3
+            - name: Send package status Slack alert to Kyle 
+              uses: bywatersolutions/action-slack@v3
               with:
                 status: custom
                 fields: all
@@ -294,23 +297,6 @@ jobs:
                   }
               env:
                 SLACK_WEBHOOK_URL: ${{ secrets.SLACK_KYLE_WEBHOOK }}
-
-            - uses: bywatersolutions/action-slack@v3
-              with:
-                status: custom
-                fields: all
-                custom_payload: |
-                  {
-                    username: 'GitHub Koha Package Notifier',
-                    icon_emoji: ':octocat:',
-                    attachments: [{
-                      color: '${{ job.status }}' === 'success' ? 'good' : '${{ job.status }}' === 'failure' ? 'danger' : 'warning',
-                      title: "New Koha Debian Package Ready!",
-                      text: `The Koha Debian package for branch ${process.env.AS_REF} has been built and is ready to import into Aptly!`,
-                    }]
-                  }
-              env:
-                SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CLIFTON_WEBHOOK }}
 
     auto_rebase_xslt:
         if: false
