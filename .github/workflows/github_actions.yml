@@ -54,7 +54,7 @@ jobs:
                   echo "KOHA_BRANCH=$KOHA_BRANCH" >> $GITHUB_ENV
                   echo "SYNC_REPO=$SYNC_REPO" >> $GITHUB_ENV
                   echo "RUN_TESTS_AND_EXIT=yes" >> $GITHUB_ENV
-                  echo "KOHA_IMAGE=20.05-stretch" >> $GITHUB_ENV
+                  echo "KOHA_IMAGE=21.05-stretch" >> $GITHUB_ENV
 
             - name: Set up koha-testing-docker
               run: |
@@ -362,7 +362,7 @@ jobs:
               run: ls -alh
 
             - name: Build the Docker image
-              run: cd koha-docker; docker build --tag quay.io/bywatersolutions/koha:${{ steps.extracted_variables.outputs.SHORTNAME }}-${{ steps.extracted_variables.outputs.KOHA_MAJOR_MINOR }}-latest --tag quay.io/bywatersolutions/koha:${{ steps.extracted_variables.outputs.KOHA_BRANCH }} --build-arg KOHA_COMMON_DEB_URL=${{ steps.extracted_variables.outputs.DEB_URL }} --build-arg KOHA_VERSION=20.05 .
+              run: cd koha-docker; docker build --tag quay.io/bywatersolutions/koha:${{ steps.extracted_variables.outputs.SHORTNAME }}-${{ steps.extracted_variables.outputs.KOHA_MAJOR_MINOR }}-latest --tag quay.io/bywatersolutions/koha:${{ steps.extracted_variables.outputs.KOHA_BRANCH }} --build-arg KOHA_COMMON_DEB_URL=${{ steps.extracted_variables.outputs.DEB_URL }} --build-arg KOHA_VERSION=21.05 .
 
             - name: Log in to Docker Hub
               env:
