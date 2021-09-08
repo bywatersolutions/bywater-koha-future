@@ -25,7 +25,9 @@ This script displays items in the tmp_holdsqueue table
 use Modern::Perl;
 use CGI qw ( -utf8 );
 use C4::Auth qw( get_template_and_user );
-use C4::Output qw( output_html_with_http_headers );
+use C4::Output qw( output_html_with_http_headers pagination_bar );
+use C4::Biblio;
+use C4::Items;
 use C4::HoldsQueue qw( GetHoldsQueueItems );
 use Koha::BiblioFrameworks;
 use Koha::ItemTypes;
@@ -44,17 +46,22 @@ my $params = $query->Vars;
 my $run_report     = $params->{'run_report'};
 my $branchlimit    = $params->{'branchlimit'};
 my $itemtypeslimit = $params->{'itemtypeslimit'};
-my $ccodeslimit = $params->{'ccodeslimit'};
+my $ccodeslimit    = $params->{'ccodeslimit'};
 my $locationslimit = $params->{'locationslimit'};
+my $limit          = $params->{'limit'} || 20;
+my $page           = $params->{'page'}  || 1;
 
 if ( $run_report ) {
-    my $items = GetHoldsQueueItems({
+    my ( $items, $total ) = GetHoldsQueueItems({
         branchlimit => $branchlimit,
         itemtypeslimit => $itemtypeslimit,
         ccodeslimit => $ccodeslimit,
-        locationslimit => $locationslimit
+        locationslimit => $locationslimit,
+        limit => $limit,
+        page => $page,
     });
 
+    my $pages = int( $total / $limit ) + ( ( $total % $limit ) > 0 ? 1 : 0 );
     $template->param(
         branchlimit     => $branchlimit,
         itemtypeslimit     => $itemtypeslimit,
@@ -63,6 +70,22 @@ if ( $run_report ) {
         total      => scalar @$items,
         itemsloop  => $items,
         run_report => $run_report,
+        page           => $page,
+        limit          => $limit,
+        pagination_bar => pagination_bar(
+            'view_holdsqueue.pl',
+            $pages,
+            $page,
+            'page',
+            {
+                branchlimit    => $branchlimit,
+                itemtypeslimit => $itemtypeslimit,
+                ccodeslimit    => $ccodeslimit,
+                locationslimit => $locationslimit,
+                limit          => $limit,
+                run_report     => 1,
+            }
+        ),
     );
 }
 

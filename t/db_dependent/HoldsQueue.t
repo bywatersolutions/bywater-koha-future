@@ -163,7 +163,7 @@ $dbh->do("DELETE FROM items WHERE holdingbranch = '$borrower_branchcode'");
 # Frst branch from StaticHoldsQueueWeight
 test_queue ('take from lowest cost branch', 0, $borrower_branchcode, $other_branches[0]);
 test_queue ('take from lowest cost branch', 1, $borrower_branchcode, $least_cost_branch_code);
-my $queue = C4::HoldsQueue::GetHoldsQueueItems({ branchlmit => $least_cost_branch_code}) || [];
+my ( $queue, $total ) = C4::HoldsQueue::GetHoldsQueueItems({ branchlmit => $least_cost_branch_code}) || [];
 my $queue_item = $queue->[0];
 ok( $queue_item
  && $queue_item->{pickbranch} eq $borrower_branchcode

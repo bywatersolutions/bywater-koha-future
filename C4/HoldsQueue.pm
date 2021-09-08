@@ -125,6 +125,11 @@ sub GetHoldsQueueItems {
     my $params = shift;
     my $dbh   = C4::Context->dbh;
 
+    my $limit = $params->{limit} || 20;
+    my $page  = $params->{page}  || 1;
+
+    my $offset = 0 + ( $limit * ( $page - 1 ) );
+
     my @bind_params = ();
     my $query = q/SELECT borrowers.surname,
                          borrowers.othernames,
@@ -162,6 +167,7 @@ sub GetHoldsQueueItems {
         push @bind_params, $params->{locationslimit};
     }
     $query .= " ORDER BY ccode, location, cn_sort, author, title, pickbranch, reservedate";
+    $query .= " LIMIT $limit OFFSET $offset";
     my $sth = $dbh->prepare($query);
     $sth->execute(@bind_params);
     my $items = [];
@@ -183,7 +189,29 @@ sub GetHoldsQueueItems {
 
         push @$items, $row;
     }
-    return $items;
+
+    @bind_params = ();
+    my $total_query = "SELECT COUNT(*) FROM tmp_holdsqueue JOIN items USING (itemnumber) WHERE 1=1 ";
+    if ($params->{branchlimit}) {
+        $total_query .=" AND tmp_holdsqueue.holdingbranch = ?";
+        push @bind_params, $params->{branchlimit};
+    }
+    if( $params->{itemtypeslimit} ) {
+        $total_query .=" AND items.itype = ? ";
+        push @bind_params, $params->{itemtypeslimit};
+    }
+    if( $params->{ccodeslimit} ) {
+        $total_query .=" AND items.ccode = ? ";
+        push @bind_params, $params->{ccodeslimit};
+    }
+    if( $params->{locationslimit} ) {
+        $total_query .=" AND items.location = ? ";
+        push @bind_params, $params->{locationslimit};
+    }
+
+    my ($total_results) = $dbh->selectrow_array( $total_query, undef, @bind_params );
+
+    return ( $items, $total_results );
 }
 
 =head2 CreateQueue
