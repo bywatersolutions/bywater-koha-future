@@ -291,10 +291,8 @@ UPCOMINGITEM: foreach my $upcoming ( @$upcoming_dues ) {
             my $item = Koha::Items->find( $upcoming->{itemnumber} );
             my $letter_type = 'DUE';
             $sth->execute($upcoming->{'borrowernumber'},$upcoming->{'itemnumber'},'0');
-            my $titles = "";
-            while ( my $item_info = $sth->fetchrow_hashref()) {
-                $titles .= C4::Letters::get_item_content( { item => $item_info, item_content_fields => \@item_content_fields } );
-            }
+            my $item_info = $sth->fetchrow_hashref();
+            my $title = C4::Letters::get_item_content( { item => $item_info, item_content_fields => \@item_content_fields } );
 
             ## Get branch info for borrowers home library.
             foreach my $transport ( keys %{$borrower_preferences->{'transports'}} ) {
@@ -304,7 +302,10 @@ UPCOMINGITEM: foreach my $upcoming ( @$upcoming_dues ) {
                                       branchcode     => $branchcode,
                                       biblionumber   => $item->biblionumber,
                                       itemnumber     => $upcoming->{'itemnumber'},
-                                      substitute     => { 'items.content' => $titles },
+                                      substitute     => {
+                                          'items.content' => $title,
+                                          issue           => $item_info,
+                                      },
                                       message_transport_type => $transport,
                                     } )
                     or warn "no letter of type '$letter_type' found for borrowernumber ".$upcoming->{'borrowernumber'}.". Please see sample_notices.sql";
@@ -339,10 +340,8 @@ UPCOMINGITEM: foreach my $upcoming ( @$upcoming_dues ) {
             my $item = Koha::Items->find( $upcoming->{itemnumber} );
             my $letter_type = 'PREDUE';
             $sth->execute($upcoming->{'borrowernumber'},$upcoming->{'itemnumber'},$borrower_preferences->{'days_in_advance'});
-            my $titles = "";
-            while ( my $item_info = $sth->fetchrow_hashref()) {
-                $titles .= C4::Letters::get_item_content( { item => $item_info, item_content_fields => \@item_content_fields } );
-            }
+            my $item_info = $sth->fetchrow_hashref();
+            my $title = C4::Letters::get_item_content( { item => $item_info, item_content_fields => \@item_content_fields } );
 
             ## Get branch info for borrowers home library.
             foreach my $transport ( keys %{$borrower_preferences->{'transports'}} ) {
@@ -352,7 +351,10 @@ UPCOMINGITEM: foreach my $upcoming ( @$upcoming_dues ) {
                                       branchcode     => $branchcode,
                                       biblionumber   => $item->biblionumber,
                                       itemnumber     => $upcoming->{'itemnumber'},
-                                      substitute     => { 'items.content' => $titles },
+                                      substitute     => {
+                                          'items.content' => $title,
+                                          issue           => $item_info,
+                                      },
                                       message_transport_type => $transport,
                                     } )
                     or warn "no letter of type '$letter_type' found for borrowernumber ".$upcoming->{'borrowernumber'}.". Please see sample_notices.sql";
@@ -591,7 +593,9 @@ sub send_digests {
         });
         my $titles = "";
         my @itemnumbers;
+        my @issues;
         while ( my $item_info = $next_item_info->()) {
+            push( @issues, $item_info );
             push @itemnumbers, $item_info->{itemnumber};
             $titles .= C4::Letters::get_item_content( { item => $item_info, item_content_fields => \@item_content_fields } );
         }
@@ -602,9 +606,11 @@ sub send_digests {
                 {
                     letter_code    => $params->{letter_code},
                     borrowernumber => $borrowernumber,
+                    issues         => \@issues,
                     substitute     => {
                         count           => $count,
                         'items.content' => $titles,
+                        issues          => \@issues,
                         %branch_info
                     },
                     itemnumbers    => \@itemnumbers,
