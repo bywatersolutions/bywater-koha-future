@@ -63,20 +63,18 @@ if ( $run_report ) {
 
     my $pages = int( $total / $limit ) + ( ( $total % $limit ) > 0 ? 1 : 0 );
     $template->param(
-        branchlimit     => $branchlimit,
-        itemtypeslimit     => $itemtypeslimit,
-        ccodeslimit     => $ccodeslimit,
-        locationslimit     => $locationslimit,
-        total      => scalar @$items,
-        itemsloop  => $items,
-        run_report => $run_report,
+        branchlimit    => $branchlimit,
+        itemtypeslimit => $itemtypeslimit,
+        ccodeslimit    => $ccodeslimit,
+        locationslimit => $locationslimit,
+        total          => $total,
+        itemsloop      => $items,
+        run_report     => $run_report,
         page           => $page,
         limit          => $limit,
         pagination_bar => pagination_bar(
             'view_holdsqueue.pl',
-            $pages,
-            $page,
-            'page',
+            $pages, $page, 'page',
             {
                 branchlimit    => $branchlimit,
                 itemtypeslimit => $itemtypeslimit,
