@@ -718,7 +718,7 @@ sub BatchCommitItems {
         my ( $MARCfield, $MARCsubfield ) = GetMarcFromKohaField( 'items.onloan' );
         $item_marc->field($MARCfield)->delete_subfield( code => $MARCsubfield );
 
-        my $item = TransformMarcToKoha( $item_marc );
+        my $item = TransformMarcToKoha({ record => $item_marc });
 
         my $duplicate_barcode = exists( $item->{'barcode'} ) && Koha::Items->find({ barcode => $item->{'barcode'} });
         my $duplicate_itemnumber = exists( $item->{'itemnumber'} );
@@ -1657,7 +1657,7 @@ sub _parse_biblio_fields {
     my ($marc_record) = @_;
 
     my $dbh = C4::Context->dbh;
-    my $bibliofields = TransformMarcToKoha($marc_record, '');
+    my $bibliofields = TransformMarcToKoha({ record => $marc_record, kohafields => ['biblio.title','biblio.author','biblioitems.isbn','biblioitems.issn'] });
     return ($bibliofields->{'title'}, $bibliofields->{'author'}, $bibliofields->{'isbn'}, $bibliofields->{'issn'});
 
 }

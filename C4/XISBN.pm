@@ -1,4 +1,5 @@
 package C4::XISBN;
+
 # Copyright (C) 2007 LibLime
 # Joshua Ferraro <jmf@liblime.com>
 #
@@ -19,8 +20,8 @@ package C4::XISBN;
 
 use Modern::Perl;
 use XML::Simple;
-#use LWP::Simple;
-use C4::Biblio;
+
+use C4::Biblio qw(TransformMarcToKoha);
 use C4::Koha qw( GetNormalizedISBN );
 use C4::Search qw( new_record_from_zebra );
 use C4::External::Syndetics qw( get_syndetics_editions );
@@ -58,7 +59,10 @@ sub _get_biblio_from_xisbn {
     return unless ( !$errors && scalar @$results );
 
     my $record = C4::Search::new_record_from_zebra( 'biblioserver', $results->[0] );
-    my $biblionumber = C4::Biblio::TransformMarcToKohaOneField( 'biblio.biblionumber', $record );
+    my $biblionumber = C4::Biblio::TransformMarcToKoha({
+        kohafields => ['biblio.biblionumber'],
+        record => $record
+    })->{biblionumber};
     return unless $biblionumber;
 
     my $biblio = Koha::Biblios->find( $biblionumber );

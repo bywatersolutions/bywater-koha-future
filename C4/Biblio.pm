@@ -65,7 +65,6 @@ BEGIN {
         TransformHtmlToMarc
         TransformHtmlToXml
         prepare_host_field
-        TransformMarcToKohaOneField
     );
 
     # Internal functions
@@ -220,7 +219,7 @@ sub AddBiblio {
 
             # transform the data into koha-table style data
             SetUTF8Flag($record);
-            my $olddata = TransformMarcToKoha( $record, $frameworkcode, 'no_items' );
+            my $olddata = TransformMarcToKoha({ record => $record, limit_table => 'no_items' });
 
             my $biblio = Koha::Biblio->new(
                 {
@@ -417,7 +416,7 @@ sub ModBiblio {
     _koha_marc_update_bib_ids( $record, $frameworkcode, $biblionumber, $biblioitemnumber );
 
     # load the koha-table data object
-    my $oldbiblio = TransformMarcToKoha( $record, $frameworkcode );
+    my $oldbiblio = TransformMarcToKoha({ record => $record });
 
     # update MARC subfield that stores biblioitems.cn_sort
     _koha_marc_update_biblioitem_cn_sort( $record, $oldbiblio, $frameworkcode );
@@ -2292,7 +2291,7 @@ sub TransformHtmlToMarc {
 
 =head2 TransformMarcToKoha
 
-    $result = TransformMarcToKoha( $record, undef, $limit )
+    $result = TransformMarcToKoha({ record => $record, limit_table => $limit })
 
 Extract data from a MARC bib record into a hashref representing
 Koha biblio, biblioitems, and items fields.
@@ -2303,9 +2302,11 @@ hash_ref.
 =cut
 
 sub TransformMarcToKoha {
-    my ( $record, $frameworkcode, $limit_table ) = @_;
-    # FIXME  Parameter $frameworkcode is obsolete and will be removed
-    $limit_table //= q{};
+    my ( $params ) = @_;
+
+    my $record = $params->{record};
+    my $limit_table = $params->{limit_table} // q{};
+    my $kohafields = $params->{kohafields};
 
     my $result = {};
     if (!defined $record) {
@@ -2323,13 +2324,34 @@ sub TransformMarcToKoha {
     # The next call acknowledges Default as the authoritative framework
     # for Koha to MARC mappings.
     my $mss = GetMarcSubfieldStructure( '', { unsafe => 1 } ); # Do not change framework
-    foreach my $kohafield ( keys %{ $mss } ) {
+    @{$kohafields} = keys %{ $mss } unless $kohafields;
+    foreach my $kohafield ( @{$kohafields} ) {
         my ( $table, $column ) = split /[.]/, $kohafield, 2;
         next unless $tables{$table};
-        my $val = TransformMarcToKohaOneField( $kohafield, $record );
-        next if !defined $val;
+        my ( $value, @values );
+        foreach my $fldhash ( @{$mss->{$kohafield}} ) {
+            my $tag = $fldhash->{tagfield};
+            my $sub = $fldhash->{tagsubfield};
+            foreach my $fld ( $record->field($tag) ) {
+                if( $sub eq '@' || $fld->is_control_field ) {
+                    push @values, $fld->data if $fld->data;
+                } else {
+                    push @values, grep { $_ } $fld->subfield($sub);
+                }
+            }
+        }
+        if ( @values ){
+            $value = join ' | ', uniq(@values);
+
+            # Additional polishing for individual kohafields
+            if( $kohafield =~ /copyrightdate|publicationyear/ ) {
+                $value = _adjust_pubyear( $value );
+            }
+        }
+
+        next if !defined $value;
         my $key = _disambiguate( $table, $column );
-        $result->{$key} = $val;
+        $result->{$key} = $value;
     }
     return $result;
 }
@@ -2373,44 +2395,9 @@ sub _disambiguate {
 
 }
 
-=head2 TransformMarcToKohaOneField
-
-    $val = TransformMarcToKohaOneField( 'biblio.title', $marc );
-
-    Note: The authoritative Default framework is used implicitly.
-
-=cut
-
-sub TransformMarcToKohaOneField {
-    my ( $kohafield, $marc ) = @_;
-
-    my ( @rv, $retval );
-    my @mss = GetMarcSubfieldStructureFromKohaField($kohafield);
-    foreach my $fldhash ( @mss ) {
-        my $tag = $fldhash->{tagfield};
-        my $sub = $fldhash->{tagsubfield};
-        foreach my $fld ( $marc->field($tag) ) {
-            if( $sub eq '@' || $fld->is_control_field ) {
-                push @rv, $fld->data if $fld->data;
-            } else {
-                push @rv, grep { $_ } $fld->subfield($sub);
-            }
-        }
-    }
-    return unless @rv;
-    $retval = join ' | ', uniq(@rv);
-
-    # Additional polishing for individual kohafields
-    if( $kohafield =~ /copyrightdate|publicationyear/ ) {
-        $retval = _adjust_pubyear( $retval );
-    }
-
-    return $retval;
-}
-
 =head2 _adjust_pubyear
 
-    Helper routine for TransformMarcToKohaOneField
+    Helper routine for TransformMarcToKoha
 
 =cut
 
