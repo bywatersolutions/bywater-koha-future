@@ -1282,6 +1282,7 @@ sub handle_item_information {
         $resp .= maybe_add( FID_PRINT_LINE, $item->print_line, $server );
 
         $resp .= $item->build_additional_item_fields_string( $server );
+        $resp .= $item->build_custom_field_string( $server );
     }
 
     $self->write_msg( $resp, undef, $server->{account}->{terminator}, $server->{account}->{encoding} );
