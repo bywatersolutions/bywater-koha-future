@@ -277,6 +277,21 @@ __PACKAGE__->set_primary_key("categorycode");
 
 =head1 RELATIONS
 
+=head2 auth_provider_domains
+
+Type: has_many
+
+Related object: L<Koha::Schema::Result::AuthProviderDomain>
+
+=cut
+
+__PACKAGE__->has_many(
+  "auth_provider_domains",
+  "Koha::Schema::Result::AuthProviderDomain",
+  { "foreign.default_category_id" => "self.categorycode" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 borrower_attribute_types
 
 Type: has_many
