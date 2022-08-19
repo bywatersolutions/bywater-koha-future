@@ -238,7 +238,7 @@ jobs:
 
             - name: Run koha-dpkg-docker
               run: |
-                  docker run --volume=/tmp/basetgz/base.tgz:/var/cache/pbuilder/base.tgz --volume=${{ steps.extracted_variables.outputs.KOHACLONE }}:/koha --volume=/tmp/debs:/debs --privileged --env VERSION="${{ steps.extracted_variables.outputs.MMM_VERSION }}~${{ steps.extracted_variables.outputs.SHORTNAME }}~${{ steps.extracted_variables.outputs.MARK }}" koha/koha-dpkg:latest
+                  docker run --volume=/tmp/basetgz/base.tgz:/var/cache/pbuilder/base.tgz --volume=${{ steps.extracted_variables.outputs.KOHACLONE }}:/koha --volume=/tmp/debs:/debs --privileged --env VERSION="${{ steps.extracted_variables.outputs.MMM_VERSION }}~${{ steps.extracted_variables.outputs.SHORTNAME }}~${{ steps.extracted_variables.outputs.MARK }}" koha/koha-dpkg:master
 
             - name: List file in debs dir
               run: ls -alh /tmp/debs
