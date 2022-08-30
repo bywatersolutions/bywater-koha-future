@@ -29,7 +29,8 @@ use Exception::Class (
     },
     'Koha::Exceptions::MissingParameter' => {
         isa => 'Koha::Exception',
-        description => 'A required parameter is missing'
+        description => 'A required parameter is missing',
+        fields => ['parameter'],
     },
     'Koha::Exceptions::ParameterTooHigh' => {
         isa => 'Koha::Exception',
