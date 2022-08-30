@@ -8,6 +8,10 @@ definitions:
     $ref: ./definitions/advancededitormacro.yaml
   allows_renewal:
     $ref: ./definitions/allows_renewal.yaml
+  auth_provider:
+    "$ref": ./definitions/auth_provider.yaml
+  auth_provider_domain:
+    "$ref": ./definitions/auth_provider_domain.yaml
   basket:
     $ref: ./definitions/basket.yaml
   cashup:
@@ -93,6 +97,14 @@ paths:
     $ref: "./paths/advancededitormacros.yaml#/~1advanced_editor~1macros~1{advancededitormacro_id}"
   "/article_requests/{article_request_id}":
     $ref: "./paths/article_requests.yaml#/~1article_requests~1{article_request_id}"
+  /auth/providers:
+    $ref: paths/auth.yaml#/~1auth~1providers
+  "/auth/providers/{auth_provider_id}":
+    $ref: paths/auth.yaml#/~1auth~1providers~1{auth_provider_id}
+  "/auth/providers/{auth_provider_id}/domains":
+    $ref: paths/auth.yaml#/~1auth~1providers~1{auth_provider_id}~1domains
+  "/auth/providers/{auth_provider_id}/domains/{auth_provider_domain_id}":
+    $ref: paths/auth.yaml#/~1auth~1providers~1{auth_provider_id}~1domains~1{auth_provider_domain_id}
   "/biblios/{biblio_id}":
     $ref: "./paths/biblios.yaml#/~1biblios~1{biblio_id}"
   "/biblios/{biblio_id}/checkouts":
@@ -159,6 +171,8 @@ paths:
     $ref: ./paths/libraries.yaml#/~1libraries
   "/libraries/{library_id}":
     $ref: "./paths/libraries.yaml#/~1libraries~1{library_id}"
+  "/oauth/login/{provider}/{interface}":
+    $ref: ./paths/oauth.yaml#/~1oauth~1login~1{provider_code}~1{interface}
   /oauth/token:
     $ref: ./paths/oauth.yaml#/~1oauth~1token
   /patrons:
@@ -187,8 +201,8 @@ paths:
     $ref: ./paths/libraries.yaml#/~1public~1libraries
   "/public/libraries/{library_id}":
     $ref: "./paths/libraries.yaml#/~1public~1libraries~1{library_id}"
-  "/public/oauth/login/{provider}/{interface}":
-    $ref: ./paths/public_oauth.yaml#/~1public~1oauth~1login~1{provider}~1{interface}
+  "/public/oauth/login/{provider_code}/{interface}":
+    $ref: ./paths/public_oauth.yaml#/~1public~1oauth~1login~1{provider_code}~1{interface}
   "/public/patrons/{patron_id}/article_requests/{article_request_id}":
     $ref: "./paths/article_requests.yaml#/~1public~1patrons~1{patron_id}~1article_requests~1{article_request_id}"
   "/public/patrons/{patron_id}/guarantors/can_see_charges":
@@ -228,6 +242,18 @@ parameters:
     description: Advanced editor macro internal identifier
     in: path
     name: advancededitormacro_id
+    required: true
+    type: integer
+  auth_provider_id_pp:
+    description: Authentication provider internal identifier
+    in: path
+    name: auth_provider_id
+    required: true
+    type: integer
+  auth_provider_domain_id_pp:
+    description: Authentication provider domain internal identifier
+    in: path
+    name: auth_provider_domain_id
     required: true
     type: integer
   biblio_id_pp:
@@ -523,6 +549,9 @@ tags:
   - description: "Manage article requests\n"
     name: article_requests
     x-displayName: Article requests
+  - description: "Manage authentication providers\n"
+    name: auth_providers
+    x-displayName: Authentication providers
   - description: "Manage baskets for the acquisitions module\n"
     name: baskets
     x-displayName: Baskets
