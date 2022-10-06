@@ -70,8 +70,19 @@ jobs:
 
             - name: Run tests
               run: |
-                  docker-compose -f docker-compose.yml -p koha up --abort-on-container-exit --no-color
+                  docker-compose -f docker-compose.yml -p koha up -d --no-color
+                  sleep 5
+                  echo "Installing libmojolicious-plugin-oauth2-perl"
+                  docker exec koha_koha_1 apt-get install -y libmojolicious-plugin-oauth2-perl 
+                  while [ $? -ne 0 ]; do echo "INSTALL libmojolicious-plugin-oauth2-perl" && docker exec koha_koha_1 apt-get install -y libmojolicious-plugin-oauth2-perl; done
+                  echo "DONE Installing libmojolicious-plugin-oauth2-perl"
+                  TEST=$(docker ps | grep koha_koha_1); while [ $? -ne 1 ]; do echo "STILL RUNNING TESTS" && sleep 1 && TEST=$(docker ps | grep koha_koha_1) ; done; true
+                  echo "DONE RUNNING TESTS"
                   cat $GITHUB_WORKSPACE/testing.success
+
+            - name: Show docker logs
+              run: |
+                  docker logs koha_koha_1
 
             - name: Post test cleanup
               run: |
