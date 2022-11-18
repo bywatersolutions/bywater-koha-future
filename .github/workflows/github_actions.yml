@@ -311,6 +311,15 @@ jobs:
               env:
                 SLACK_WEBHOOK_URL: ${{ secrets.SLACK_KYLE_WEBHOOK }}
 
+            - name: Sleep for 30 seconds
+              run: sleep 30s
+              shell: bash
+
+            - name: Notify package importer
+              run: curl --insecure "https://apt2.bywatersolutions.com/?tag=${{ steps.extracted_variables.outputs.TAG_NAME }}&t=${{ secrets.TOKEN }}"
+              shell: bash
+
+
     build-docker:
         #if: github.repository == 'bywatersolutions/bywater-koha' || github.repository == 'bywatersolutions/bywater-koha-futureNOT'
         if: false
