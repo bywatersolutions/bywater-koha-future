@@ -137,6 +137,8 @@ paths:
     $ref: paths/auth.yaml#/~1auth~1identity_providers~1{identity_provider_id}~1domains
   "/auth/identity_providers/{identity_provider_id}/domains/{identity_provider_domain_id}":
     $ref: paths/auth.yaml#/~1auth~1identity_providers~1{identity_provider_id}~1domains~1{identity_provider_domain_id}
+  "/authorities/{authority_id}":
+    $ref: paths/authorities.yaml#/~1authorities~1{authority_id}
   "/biblios/{biblio_id}":
     $ref: "./paths/biblios.yaml#/~1biblios~1{biblio_id}"
   "/biblios/{biblio_id}/checkouts":
@@ -334,6 +336,12 @@ parameters:
     description: Agreement period internal identifier
     in: path
     name: agreement_period_id
+    required: true
+    type: integer
+  authority_id_pp:
+    description: Authority identifier
+    in: path
+    name: authority_id
     required: true
     type: integer
   identity_provider_id_pp:
