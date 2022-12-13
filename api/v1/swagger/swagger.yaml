@@ -137,6 +137,8 @@ paths:
     $ref: paths/auth.yaml#/~1auth~1identity_providers~1{identity_provider_id}~1domains
   "/auth/identity_providers/{identity_provider_id}/domains/{identity_provider_domain_id}":
     $ref: paths/auth.yaml#/~1auth~1identity_providers~1{identity_provider_id}~1domains~1{identity_provider_domain_id}
+  "/authorities":
+    $ref: paths/authorities.yaml#/~1authorities
   "/authorities/{authority_id}":
     $ref: paths/authorities.yaml#/~1authorities~1{authority_id}
   "/biblios/{biblio_id}":
@@ -343,6 +345,18 @@ parameters:
     in: path
     name: authority_id
     required: true
+    type: integer
+  authority_type_header:
+    description: Authority type code. Use when content type is not application/json
+    name: authority_type
+    in: header
+    required: false
+    type: string
+  confirm_not_duplicate_header:
+    description: Confirm the posted element is not a duplicate
+    name: confirm_not_duplicate
+    in: header
+    required: false
     type: integer
   identity_provider_id_pp:
     description: Authentication provider internal identifier
