@@ -161,7 +161,7 @@ sub add {
             $record = MARC::Record->new_from_xml( $body->{marcxml}, 'UTF-8', $flavour );
             $authtypecode = $body->{authtypecode};
         } else {
-            $authtypecode = $c->validation->param('authority_type');
+            $authtypecode = $c->validation->param('x-authority-type');
             if ( $c->req->headers->content_type =~ m/application\/marcxml\+xml/ ) {
                 $record = MARC::Record->new_from_xml( $body, 'UTF-8', $flavour );
             } elsif ( $c->req->headers->content_type =~ m/application\/marc-in-json/ ) {
@@ -184,7 +184,7 @@ sub add {
         my ($duplicateauthid,$duplicateauthvalue);
             ($duplicateauthid,$duplicateauthvalue) = FindDuplicateAuthority($record,$authtypecode);
 
-        my $confirm_not_duplicate = $c->validation->param('confirm_not_duplicate');
+        my $confirm_not_duplicate = $c->validation->param('x-confirm-not-duplicate');
 
         return $c->render(
             status  => 400,
