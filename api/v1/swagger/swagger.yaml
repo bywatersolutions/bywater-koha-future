@@ -348,13 +348,13 @@ parameters:
     type: integer
   authority_type_header:
     description: Authority type code. Use when content type is not application/json
-    name: authority_type
+    name: x-authority-type
     in: header
     required: false
     type: string
   confirm_not_duplicate_header:
     description: Confirm the posted element is not a duplicate
-    name: confirm_not_duplicate
+    name: x-confirm-not-duplicate
     in: header
     required: false
     type: integer

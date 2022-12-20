@@ -216,15 +216,15 @@ subtest 'post() tests' => sub {
       ->status_is(200)
       ->json_has('/id');
 
-    $t->post_ok("//$userid:$password@/api/v1/authorities" => {'Content-Type' => 'application/marcxml+xml', authority_type => 'CORPO_NAME'} => $marcxml)
+    $t->post_ok("//$userid:$password@/api/v1/authorities" => {'Content-Type' => 'application/marcxml+xml', 'x-authority-type' => 'CORPO_NAME'} => $marcxml)
       ->status_is(200)
       ->json_has('/id');
 
-    $t->post_ok("//$userid:$password@/api/v1/authorities" => {'Content-Type' => 'application/marc-in-json', authority_type => 'CORPO_NAME'} => $mij)
+    $t->post_ok("//$userid:$password@/api/v1/authorities" => {'Content-Type' => 'application/marc-in-json', 'x-authority-type' => 'CORPO_NAME'} => $mij)
       ->status_is(200)
       ->json_has('/id');
 
-    $t->post_ok("//$userid:$password@/api/v1/authorities" => {'Content-Type' => 'application/marc', authority_type => 'CORPO_NAME'} => $marc)
+    $t->post_ok("//$userid:$password@/api/v1/authorities" => {'Content-Type' => 'application/marc', 'x-authority-type' => 'CORPO_NAME'} => $marc)
       ->status_is(200)
       ->json_has('/id');
 
