@@ -141,6 +141,8 @@ paths:
     $ref: paths/authorities.yaml#/~1authorities
   "/authorities/{authority_id}":
     $ref: paths/authorities.yaml#/~1authorities~1{authority_id}
+  "/biblios":
+    $ref: "./paths/biblios.yaml#/~1biblios"
   "/biblios/{biblio_id}":
     $ref: "./paths/biblios.yaml#/~1biblios~1{biblio_id}"
   "/biblios/{biblio_id}/checkouts":
@@ -354,6 +356,21 @@ parameters:
     in: header
     required: false
     type: string
+  framework_id_header:
+    description: Framework id. Use when content type is not application/json
+    name: x-framework-id
+    in: header
+    required: false
+    type: string
+  marc_schema_header:
+    description: March schema. One of MARC21 or UNIMARC
+    name: x-marc-schema
+    in: header
+    required: false
+    type: string
+    enum:
+      - MARC21
+      - UNIMARC
   confirm_not_duplicate_header:
     description: Confirm the posted element is not a duplicate
     name: x-confirm-not-duplicate
