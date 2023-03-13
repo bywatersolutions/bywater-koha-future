@@ -733,7 +733,7 @@ sub list {
         if ( $c->req->headers->accept =~ m/application\/json(;.*)?$/ ) {
             return $c->render(
                 status => 200,
-                json   => $biblios->to_api
+                json   => $c->objects->to_api( $biblios ),
             );
         }
         elsif (
