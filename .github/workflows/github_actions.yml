@@ -93,7 +93,7 @@ jobs:
     release-notes: # This container checks out the branch on it's own, so no need for the GitHub checkout action
         if: github.repository == 'bywatersolutions/bywater-koha'
         name: Build release notes
-        needs: [unit-test, is-a-mark]
+        needs: [unit-test, is-a-mark, build-debs]
         runs-on: ubuntu-latest
         steps:
             - name: Export additional variables needed by bywater-koha-custom-rebaser
@@ -177,7 +177,7 @@ jobs:
     build-debs:
         if: github.repository == 'bywatersolutions/bywater-koha' || github.repository == 'bywatersolutions/bywater-koha-future'
         name: Build Debian packages
-        needs: [unit-test, is-a-mark]
+        needs: [is-a-mark]
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v1
