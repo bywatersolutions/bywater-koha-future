@@ -94,6 +94,12 @@ try {
 
 my $pm = Parallel::ForkManager->new($max_processes);
 
+$SIG{ALRM} = sub {
+    $pm->reap_finished_children();
+    alarm(1);
+};
+alarm(1);
+
 if ( $conn ) {
     # FIXME cf note in Koha::BackgroundJob about $namespace
     my $namespace = C4::Context->config('memcached_namespace');
