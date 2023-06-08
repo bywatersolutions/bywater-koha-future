@@ -82,7 +82,7 @@
 
     [% WRAPPER tab_panels %]
         [% WRAPPER tab_panel tabname="checkouts" bt_active= 1 %]
-            [% INCLUDE "checkouts-table.inc" %]
+            [% INCLUDE "checkouts-table.inc" patronpage=patronpage %]
         [% END # /tab_panel# %]
 
         [% WRAPPER tab_panel tabname="relatives-issues" %]
