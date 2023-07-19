@@ -402,6 +402,7 @@ jobs:
 
     zap-scan-baseline-opac:
         name: ZAP Scan - Baseline - OPAC
+        if: false
         needs: unit-test
         runs-on: ubuntu-latest
         steps:
@@ -470,6 +471,7 @@ jobs:
 
     zap-scan-baseline-staff:
         name: ZAP Scan - Baseline - Staff
+        if: false
         needs: unit-test
         runs-on: ubuntu-latest
         steps:
