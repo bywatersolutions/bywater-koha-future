@@ -540,7 +540,7 @@
             [% SET letter = letters.$lang.templates.$mtt %]
             [% NEXT IF letter.message_transport_type == "itiva" && !Koha.Preference('TalkingTechItivaPhoneNotification') %]
             [% NEXT IF letter.message_transport_type == "phone" && !Koha.Preference('PhoneNotification') %]
-            <div class="panel panel-default">
+            [% NEXT IF letter.message_transport_type != "print" && module == "report" %]
                 <div class="panel-heading" role="tab" id="[% letter.message_transport_type | html %]_[% lang | html %]Heading">
                     <h3 class="panel-title">
                         <a role="button" class="collapsed" data-toggle="collapse" data-parent="#group_[% lang | html %]" href="#[% letter.message_transport_type | html %]_[% lang | html %]" aria-expanded="false" aria-controls="[% letter.message_transport_type | html %]_[% lang | html %]">
