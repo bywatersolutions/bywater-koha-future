@@ -538,6 +538,18 @@ subtest 'add_items_from_import_record() - addorderiso2709.pl' => sub {
         'c_sort2'    => '',
         'c_sort1'    => '',
         'c_quantity' => '1',
+        'coded_location_qualifiers' => [
+            "T1",
+            "T2",
+        ],
+        'barcodes' => [
+            "T1",
+            "T2",
+        ],
+        'enumchrons' => [
+            "T1",
+            "T2",
+        ],
         'itypes'     => [
             'BK',
             'BK'
