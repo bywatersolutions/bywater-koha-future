@@ -833,6 +833,7 @@ sub _timeout_syspref {
 
 sub checkauth {
     my $query = shift;
+    warn "REQUEST STARTING [$$]";
 
     # Get shibboleth login attribute
     my $shib       = C4::Context->config('useshibboleth') && shib_ok();
