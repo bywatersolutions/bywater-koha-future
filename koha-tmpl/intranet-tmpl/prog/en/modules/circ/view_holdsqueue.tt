@@ -75,6 +75,33 @@
 
                         <h1>Holds queue</h1>
 
+                        [% IF ( run_report && total ) %]
+                            <form action="view_holdsqueue.pl" method="get" id="limitselect">
+                                <input type="hidden" name="page" value="1" />
+                                <input type="hidden" name="branchlimit" value="[% branchlimit | html %]" />
+                                <input type="hidden" name="itemtypeslimit" value="[% itemtypeslimit | html %]" />
+                                [% FOREACH cc IN ccodeslimit %]
+                                    <input type="hidden" name="ccodeslimit" value="[% cc | html %]" />
+                                [% END %]
+                                [% FOREACH loc IN locationslimit %]
+                                    <input type="hidden" name="locationslimit" value="[% loc | html %]" />
+                                [% END %]
+                                <input type="hidden" name="run_report" value="1" />
+
+                                <label for="limit">Rows per page: </label>
+                                <select name="limit" id="limit">
+                                    [% limits = [ 10, 20, 50, 100, 200, 500, 1000 ] %]
+                                    [% FOREACH l IN limits %]
+                                        [% IF l == limit %]
+                                            <option value="[% l | html %]" selected="selected">[% l | html %]</option>
+                                        [% ELSE %]
+                                            <option value="[% l | html %]">[% l | html %]</option>
+                                        [% END %]
+                                    [% END %]
+                                </select>
+                            </form>
+                        [% END %]
+
                         [% IF ( run_report ) %]
                             [% IF ( total ) %]
                                 <div class="results"
@@ -297,6 +324,41 @@
                                     </table>
                                 </div>
                                 <!-- /.page-section -->
+                                [% IF pages > 1 %]
+                                    <nav>
+                                        <ul class="pagination">
+                                            [% IF page > 1 %]
+                                                <li class="page-item"
+                                                    ><a class="page-link page-nav" href="#" data-page="[% page - 1 %]"><i class="fa fa-fw fa-angle-left"></i></a
+                                                ></li>
+                                            [% END %]
+                                            [% SET start_page = ( page - 2 > 1 ) ? page - 2 : 1 %]
+                                            [% SET end_page = ( start_page + 4 < pages ) ? start_page + 4 : pages %]
+                                            [% IF start_page > 1 %]
+                                                <li class="page-item"><a class="page-link page-nav" href="#" data-page="1">1</a></li>
+                                                [% IF start_page > 2 %]<li class="page-item disabled"><a class="page-link">...</a></li>[% END %]
+                                            [% END %]
+                                            [% SET p = start_page %]
+                                            [% WHILE p <= end_page %]
+                                                [% IF p == page %]
+                                                    <li class="page-item active"><a class="page-link" href="#">[% p | html %]</a></li>
+                                                [% ELSE %]
+                                                    <li class="page-item"><a class="page-link page-nav" href="#" data-page="[% p | html %]">[% p | html %]</a></li>
+                                                [% END %]
+                                                [% SET p = p + 1 %]
+                                            [% END %]
+                                            [% IF end_page < pages %]
+                                                [% IF end_page < pages - 1 %]<li class="page-item disabled"><a class="page-link">...</a></li>[% END %]
+                                                <li class="page-item"><a class="page-link page-nav" href="#" data-page="[% pages | html %]">[% pages | html %]</a></li>
+                                            [% END %]
+                                            [% IF page < pages %]
+                                                <li class="page-item"
+                                                    ><a class="page-link page-nav" href="#" data-page="[% page + 1 | html %]"><i class="fa fa-fw fa-angle-right"></i></a
+                                                ></li>
+                                            [% END %]
+                                        </ul>
+                                    </nav>
+                                [% END %]
                             [% END %]
                         [% END %]
 
@@ -397,6 +459,16 @@
                 });
             });
             var holdst;
+
+            $('#limit').change(function() {
+                $('#limitselect').submit();
+            });
+
+            $('.page-nav').click(function(e) {
+                e.preventDefault();
+                $('#limitselect input[name="page"]').val($(this).data('page'));
+                $('#limitselect').submit();
+            });
 
             // Setup filters before DataTables initialisation, in case some columns are
             // hidden by default

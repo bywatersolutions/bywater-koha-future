@@ -49,24 +49,33 @@ my @ccodeslimits    = $query->multi_param('ccodeslimit');
 my $locationslimit = @locationslimits ? \@locationslimits : undef;
 my $ccodeslimit    = @ccodeslimits    ? \@ccodeslimits    : undef;
 
+my $limit = $params->{'limit'} || 20;
+my $page  = $params->{'page'}  || 1;
+
 if ($run_report) {
-    my $items = GetHoldsQueueItems(
+    my ( $items, $total ) = GetHoldsQueueItems(
         {
             branchlimit    => $branchlimit,
             itemtypeslimit => $itemtypeslimit,
             ccodeslimit    => $ccodeslimit,
             locationslimit => $locationslimit,
+            limit          => $limit,
+            page           => $page,
         }
     );
 
+    my $pages = int( $total / $limit ) + ( ( $total % $limit ) > 0 ? 1 : 0 );
     $template->param(
         branchlimit    => $branchlimit,
         itemtypeslimit => $itemtypeslimit,
         ccodeslimit    => $ccodeslimit,
         locationslimit => $locationslimit,
-        total          => $items->count,
+        total          => $total,
         itemsloop      => $items,
         run_report     => $run_report,
+        limit          => $limit,
+        page           => $page,
+        pages          => $pages,
     );
 }
 

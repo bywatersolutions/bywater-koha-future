@@ -132,25 +132,43 @@ sub GetHoldsQueueItems {
     $search_params->{'ccode'}            = $params->{ccodeslimit}    if $params->{ccodeslimit};
     $search_params->{'location'}         = $params->{locationslimit} if $params->{locationslimit};
 
-    my $results = Koha::Hold::HoldsQueueItems->search(
+    my @order = (
+        'ccode',        'location',   'item.cn_sort', 'author',
+        'biblio.title', 'pickbranch', 'reservedate'
+    );
+
+    my $total = Koha::Hold::HoldsQueueItems->search(
         $search_params,
+        { join => [ 'borrower', 'item' ] },
+    )->count;
+
+    my %page_attrs = (
+        join     => [ 'borrower', 'biblio', 'item' ],
+        order_by => \@order,
+    );
+    if ( $params->{limit} ) {
+        $page_attrs{rows} = $params->{limit};
+        $page_attrs{page} = $params->{page} || 1;
+    }
+
+    # Paginate without prefetch, then fetch with prefetch to avoid
+    # DBIC row inflation when LIMIT is combined with prefetch JOINs
+    my $page_rs = Koha::Hold::HoldsQueueItems->search( $search_params, \%page_attrs );
+
+    my $results = Koha::Hold::HoldsQueueItems->search(
+        { 'me.itemnumber' => { -in => $page_rs->_resultset->get_column('me.itemnumber')->as_query } },
         {
-            join => [
-                'borrower',
-            ],
+            join     => ['borrower'],
             prefetch => [
                 'biblio',
                 'biblioitem',
                 { 'item' => { 'item_group_item' => 'item_group' } }
             ],
-            order_by => [
-                'ccode',        'location',   'item.cn_sort', 'author',
-                'biblio.title', 'pickbranch', 'reservedate'
-            ],
+            order_by => \@order,
         }
     );
 
-    return $results;
+    return ( $results, $total );
 }
 
 =head2 CreateQueue

@@ -200,7 +200,7 @@ $dbh->do("DELETE FROM items WHERE holdingbranch = '$borrower_branchcode'");
 # Frst branch from StaticHoldsQueueWeight
 test_queue( 'take from lowest cost branch', 0, $borrower_branchcode, $other_branches[0] );
 test_queue( 'take from lowest cost branch', 1, $borrower_branchcode, $least_cost_branch_code );
-my $queue      = C4::HoldsQueue::GetHoldsQueueItems( { branchlimit => $least_cost_branch_code } ) || [];
+my ($queue) = C4::HoldsQueue::GetHoldsQueueItems( { branchlimit => $least_cost_branch_code } );
 my $queue_item = $queue->next;
 ok(        $queue_item
         && $queue_item->pickbranch eq $borrower_branchcode
@@ -2164,22 +2164,23 @@ subtest "GetHoldsQueueItems" => sub {
         ($itemnumber_3,$biblionumber_3,'','','',42,'','')
      " );
 
-    my $queue_items = GetHoldsQueueItems();
-    is( $queue_items->count, $count + 3, 'Three items added to queue' );
+    my ( $queue_items, $queue_total ) = GetHoldsQueueItems();
+    is( $queue_total, $count + 3, 'Three items added to queue' );
 
-    $queue_items = GetHoldsQueueItems( { itemtypeslimit => $item_1->itype } );
+    ( $queue_items, $queue_total ) = GetHoldsQueueItems( { itemtypeslimit => $item_1->itype } );
     is(
-        $queue_items->count,
+        $queue_total,
         3, 'Three items of same itemtype found when itemtypeslimit passed'
     );
 
-    $queue_items = GetHoldsQueueItems( { itemtypeslimit => $item_1->itype, ccodeslimit => $item_2->ccode } );
+    ( $queue_items, $queue_total ) =
+        GetHoldsQueueItems( { itemtypeslimit => $item_1->itype, ccodeslimit => $item_2->ccode } );
     is(
-        $queue_items->count,
+        $queue_total,
         2, 'Two items of same collection found when ccodeslimit passed'
     );
 
-    $queue_items = GetHoldsQueueItems(
+    ( $queue_items, $queue_total ) = GetHoldsQueueItems(
         {
             itemtypeslimit => $item_1->itype,
             ccodeslimit    => $item_2->ccode,
@@ -2187,7 +2188,7 @@ subtest "GetHoldsQueueItems" => sub {
         }
     );
     is(
-        scalar $queue_items->count,
+        $queue_total,
         1, 'One item of shleving location found when locationslimit passed'
     );
 
