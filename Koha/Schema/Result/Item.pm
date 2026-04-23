@@ -825,16 +825,16 @@ __PACKAGE__->might_have(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 items_last_borrower
+=head2 items_last_borrowers
 
-Type: might_have
+Type: has_many
 
 Related object: L<Koha::Schema::Result::ItemsLastBorrower>
 
 =cut
 
-__PACKAGE__->might_have(
-  "items_last_borrower",
+__PACKAGE__->has_many(
+  "items_last_borrowers",
   "Koha::Schema::Result::ItemsLastBorrower",
   { "foreign.itemnumber" => "self.itemnumber" },
   { cascade_copy => 0, cascade_delete => 0 },
@@ -991,8 +991,8 @@ __PACKAGE__->might_have(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07051 @ 2026-03-20 17:09:15
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:q7KOeKejSyzlljrhfmmH4g
+# Created by DBIx::Class::Schema::Loader v0.07051 @ 2026-04-23 14:29:08
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:F955SsvbyfHhN0O6BH7Nww
 
 __PACKAGE__->belongs_to( biblioitem => "Koha::Schema::Result::Biblioitem", "biblioitemnumber" );
 
