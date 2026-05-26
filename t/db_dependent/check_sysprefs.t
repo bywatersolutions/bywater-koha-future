@@ -36,6 +36,7 @@ my @exceptions = qw(
     marcflavour
     ElasticsearchIndexStatus_authorities
     ElasticsearchIndexStatus_biblios
+    ElasticsearchIndexStatus_patrons
     OPACdidyoumean
     UsageStatsID
     UsageStatsLastUpdateTime
