@@ -288,10 +288,18 @@ sub UpdateBorrowerDebarmentFlags {
         $comment    = undef;
     }
 
-    return $dbh->do(
+    my $updated = $dbh->do(
         "UPDATE borrowers SET debarred = ?, debarredcomment = ? WHERE borrowernumber = ?", {},
         ( $expiration, $comment, $borrowernumber )
     );
+
+    # borrowers.debarred is updated here via raw SQL, bypassing Koha::Patron->store(),
+    # so the patron's "restricted" flag in the search index would otherwise go stale.
+    # Enqueue a reindex (the job self-guards on the relevant prefs).
+    require Koha::BackgroundJob::UpdateElasticPatronIndex;
+    Koha::BackgroundJob::UpdateElasticPatronIndex->new->enqueue( { patron_ids => [$borrowernumber] } );
+
+    return $updated;
 }
 
 =head2 del_restrictions_after_payment

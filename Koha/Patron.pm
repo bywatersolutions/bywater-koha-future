@@ -50,6 +50,7 @@ use Koha::Exceptions::Password;
 use Koha::Exceptions::Authorization;
 use Koha::Exceptions::HoldGroup;
 use Koha::Exceptions::PatronAccountLink;
+use Koha::Exceptions::SearchEngine::Indexer;
 use Koha::Holds;
 use Koha::HoldGroups;
 use Koha::ILL::Requests;
@@ -445,6 +446,9 @@ sub store {
             }
         }
     );
+
+    $self->_es_index_patron();
+
     return $self;
 }
 
@@ -507,12 +511,15 @@ sub delete {
                 $patron_data->{permissions} = \%granted if %granted;
             }
 
+            $self->_es_delete_patron;
+
             $self->SUPER::delete;
 
             logaction( "MEMBERS", "DELETE", $self->borrowernumber, $patron_data, undef, $patron_data )
                 if C4::Context->preference("BorrowersLog");
         }
     );
+
     return $self;
 }
 
@@ -956,6 +963,11 @@ sub merge_with {
             }
         }
     );
+
+    # The merged patrons are removed from the index by their own delete(); the
+    # keeper's aggregated data (checkouts, fines, debarments) changed during the
+    # merge, so reindex it once the transaction has committed.
+    $self->_es_index_patron();
 
     return $results;
 }
@@ -2988,6 +3000,8 @@ sub anonymize {
     foreach my $col (@columns) {
         $self->_anonymize_column( $col, $mandatory->{ lc $col } );
     }
+    $self->_es_delete_patron;
+
     $self->anonymized(1)->store;
 }
 
@@ -4265,6 +4279,63 @@ Kyle M Hall <kyle@bywatersolutions.com>
 Alex Sassmannshausen <alex.sassmannshausen@ptfs-europe.com>
 Martin Renvoize <martin.renvoize@ptfs-europe.com>
 
+=head3 _use_es_patron_index
+
+    next unless $self->_use_es_patron_index;
+
+Returns true when patron records should be maintained in the Elasticsearch
+index, i.e. when both the C<ElasticsearchPatronSearch> preference is enabled
+B<and> C<SearchEngine> is set to C<Elasticsearch>. Checking C<SearchEngine>
+avoids attempting ES operations (which would fail, and could abort patron
+deletion) on sites that keep the pref on while running Zebra.
+
 =cut
+
+sub _use_es_patron_index {
+    my ($self) = @_;
+    require Koha::BackgroundJob::UpdateElasticPatronIndex;
+    return Koha::BackgroundJob::UpdateElasticPatronIndex->patron_indexing_enabled;
+}
+
+=head3 _es_index_patron
+
+Enqueue a background job to index this patron in Elasticsearch (if enabled).
+
+=cut
+
+sub _es_index_patron {
+    my ($self) = @_;
+    return unless $self->_use_es_patron_index;
+    require Koha::BackgroundJob::UpdateElasticPatronIndex;
+    Koha::BackgroundJob::UpdateElasticPatronIndex->new->enqueue( { patron_ids => [ $self->borrowernumber ] } );
+}
+
+=head3 _es_delete_patron
+
+Remove this patron from the Elasticsearch index (if enabled).
+
+=cut
+
+sub _es_delete_patron {
+    my ($self) = @_;
+    return unless $self->_use_es_patron_index;
+    require Koha::SearchEngine::Elasticsearch::Indexer::Patrons;
+    my $indexer = Koha::SearchEngine::Elasticsearch::Indexer::Patrons->new();
+    try {
+        $indexer->delete_patrons( [ $self->borrowernumber ] );
+    } catch {
+
+        # The DB row is already gone at this point, so we cannot leave the patron
+        # in the index. Re-enqueue a background job to retry the removal so the
+        # index eventually converges even if the search engine is transiently
+        # unavailable, then surface a domain-specific exception to the caller.
+        require Koha::BackgroundJob::UpdateElasticPatronIndex;
+        Koha::BackgroundJob::UpdateElasticPatronIndex->new->enqueue( { patron_ids => [ $self->borrowernumber ] } );
+        Koha::Exceptions::SearchEngine::Indexer::DeletionError->throw(
+            error      => "Failed to remove patron from the search index: $_",
+            record_ids => [ $self->borrowernumber ],
+        );
+    };
+}
 
 1;

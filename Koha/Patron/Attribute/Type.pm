@@ -50,6 +50,34 @@ sub store {
     return $self->SUPER::store();
 }
 
+=head3 delete
+
+    $attribute_type->delete;
+
+Deletes the attribute type. Deleting a type cascades in the database and removes
+every C<borrower_attributes> row for this code. Those values are also mirrored in
+the patron search index (as C<ext_attr_E<lt>codeE<gt>> fields), so the affected
+patrons are reindexed after the deletion to purge the now-removed values.
+
+=cut
+
+sub delete {
+    my ($self) = @_;
+
+    # Capture affected patrons before the cascade removes the attribute rows.
+    my %seen;
+    my @patron_ids = grep { !$seen{$_}++ } $self->attributes->_resultset->get_column('borrowernumber')->all;
+
+    my $result = $self->SUPER::delete;
+
+    if (@patron_ids) {
+        require Koha::BackgroundJob::UpdateElasticPatronIndex;
+        Koha::BackgroundJob::UpdateElasticPatronIndex->new->enqueue( { patron_ids => \@patron_ids } );
+    }
+
+    return $result;
+}
+
 =head3 attributes
 
 =cut
