@@ -281,6 +281,8 @@ paths:
     $ref: ./paths/search_filters.yaml#/~1search_filters
   "/search_filters/{search_filter_id}":
     $ref: "./paths/search_filters.yaml#/~1search_filters~1{search_filter_id}"
+  "/search/patrons":
+    $ref: "./paths/search_patrons.yaml#/~1search~1patrons"
   "/advanced_editor/macros/shared/{advancededitormacro_id}":
     $ref: "./paths/advancededitormacros.yaml#/~1advanced_editor~1macros~1shared~1{advancededitormacro_id}"
   "/advanced_editor/macros/{advancededitormacro_id}":
@@ -1517,6 +1519,9 @@ tags:
   - description: "Manage search field mappings"
     name: search_mappings
     x-displayName: Search mappings
+  - description: "Search patrons via Elasticsearch"
+    name: search
+    x-displayName: Search
   - description: "Manage SIP2 accounts"
     name: sip2_accounts
     x-displayName: SIP2 Accounts
