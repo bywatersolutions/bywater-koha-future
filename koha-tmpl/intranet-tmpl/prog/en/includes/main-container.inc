@@ -66,6 +66,8 @@
                                 [% INCLUDE 'tags-filter.inc' %]
                             [% CASE 'tools-menu' %]
                                 [% INCLUDE 'tools-menu.inc' %]
+                            [% CASE 'patron-search' %]
+                                [% INCLUDE 'patron-search-sidebar.inc' %]
                             [% END %]
                         [% END %]
                     [% END %]
