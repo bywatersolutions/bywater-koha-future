@@ -511,14 +511,19 @@ sub delete {
                 $patron_data->{permissions} = \%granted if %granted;
             }
 
-            $self->_es_delete_patron;
-
             $self->SUPER::delete;
 
             logaction( "MEMBERS", "DELETE", $self->borrowernumber, $patron_data, undef, $patron_data )
                 if C4::Context->preference("BorrowersLog");
         }
     );
+
+    # Remove from the search index only after the DB transaction has committed.
+    # Doing it inside the transaction would leave the index inconsistent with
+    # the database if the transaction rolled back (patron gone from the index
+    # but still present in the DB). _es_delete_patron re-enqueues an index job
+    # on failure so the index converges even if ES is transiently unavailable.
+    $self->_es_delete_patron;
 
     return $self;
 }
