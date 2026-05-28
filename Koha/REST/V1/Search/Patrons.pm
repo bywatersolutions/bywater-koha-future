@@ -22,7 +22,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 use C4::Context;
 use Koha::Patrons;
-use Koha::SearchEngine::Elasticsearch::Search::Patrons;
+use Koha::SearchEngine::Search::Patrons;
 use Koha::Exceptions::SearchEngine::Search;
 use Koha::Exceptions::Elasticsearch;
 
@@ -105,7 +105,7 @@ sub search {
 
         my @restricted_libraries = $c->stash('koha.user')->libraries_where_can_see_patrons;
 
-        my $searcher = Koha::SearchEngine::Elasticsearch::Search::Patrons->new();
+        my $searcher = Koha::SearchEngine::Search::Patrons->new();
         my $results  = $searcher->search_patrons(
             query                => $q,
             fields               => $fields ? [ split /\|/, $fields ] : undef,

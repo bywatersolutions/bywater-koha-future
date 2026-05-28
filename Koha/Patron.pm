@@ -4324,8 +4324,8 @@ Remove this patron from the Elasticsearch index (if enabled).
 sub _es_delete_patron {
     my ($self) = @_;
     return unless $self->_use_es_patron_index;
-    require Koha::SearchEngine::Elasticsearch::Indexer::Patrons;
-    my $indexer = Koha::SearchEngine::Elasticsearch::Indexer::Patrons->new();
+    require Koha::SearchEngine::Indexer::Patrons;
+    my $indexer = Koha::SearchEngine::Indexer::Patrons->new();
     try {
         $indexer->delete_patrons( [ $self->borrowernumber ] );
     } catch {

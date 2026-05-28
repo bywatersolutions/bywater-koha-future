@@ -18,7 +18,7 @@ package Koha::BackgroundJob::UpdateElasticPatronIndex;
 use Modern::Perl;
 
 use C4::Context;
-use Koha::SearchEngine::Elasticsearch::Indexer::Patrons;
+use Koha::SearchEngine::Indexer::Patrons;
 
 use base 'Koha::BackgroundJob';
 
@@ -51,7 +51,7 @@ sub process {
 
     my $patron_ids = $args->{patron_ids};
 
-    my $indexer = Koha::SearchEngine::Elasticsearch::Indexer::Patrons->new();
+    my $indexer = Koha::SearchEngine::Indexer::Patrons->new();
     $indexer->index_patrons($patron_ids);
 
     $self->finish;
