@@ -163,9 +163,9 @@ sub search_patrons {
     my @patron_ids = map { $_->{_id} } @{ $response->{hits}{hits} };
 
     # Extract _source fields keyed by patron_id
-    my %es_data;
+    my %index_data;
     for my $hit ( @{ $response->{hits}{hits} } ) {
-        $es_data{ $hit->{_id} } = $hit->{_source} // {};
+        $index_data{ $hit->{_id} } = $hit->{_source} // {};
     }
 
     my %facets;
@@ -178,10 +178,10 @@ sub search_patrons {
     }
 
     return {
-        total   => $total,
-        hits    => \@patron_ids,
-        es_data => \%es_data,
-        facets  => \%facets,
+        total      => $total,
+        hits       => \@patron_ids,
+        index_data => \%index_data,
+        facets     => \%facets,
     };
 }
 

@@ -20,11 +20,14 @@ my $builder = t::lib::TestBuilder->new;
 my $t = Test::Mojo->new('Koha::REST::V1');
 t::lib::Mocks::mock_preference( 'RESTBasicAuth', 1 );
 
-subtest 'search - syspref disabled' => sub {
+subtest 'search - ES syspref disabled falls back to DB backend' => sub {
     plan tests => 2;
 
     $schema->storage->txn_begin;
 
+    # With Bug 42744 the controller is backend-agnostic: when the ES patron
+    # search pref is off, the search is served by the Database backend rather
+    # than being rejected, so the endpoint still succeeds.
     t::lib::Mocks::mock_preference( 'ElasticsearchPatronSearch', 0 );
 
     my $librarian = $builder->build_object(
@@ -38,7 +41,7 @@ subtest 'search - syspref disabled' => sub {
     my $userid = $librarian->userid;
 
     $t->get_ok("//$userid:$password\@/api/v1/search/patrons?q=smith")
-        ->status_is( 400, 'Returns 400 when syspref disabled' );
+        ->status_is( 200, 'Returns 200 using the Database backend when the ES pref is disabled' );
 
     $schema->storage->txn_rollback;
 };
