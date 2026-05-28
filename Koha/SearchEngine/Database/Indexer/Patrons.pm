@@ -36,7 +36,7 @@ group and weighted relevance scoring.
 
 my %FIELD_GROUPS = (
     standard     => [qw(surname firstname preferred_name middle_name othernames cardnumber userid)],
-    full_address => [qw(address address2 city state postal_code country)],
+    full_address => [qw(address address2 city state zipcode country)],
     all_emails   => [qw(email emailpro)],
     all_phones   => [qw(phone mobile phonepro)],
 );
@@ -50,7 +50,7 @@ my %DB_TO_FIELD = (
     sort2         => 'statistics_2',
 );
 
-# Individual fields that get their own row
+# Individual fields that get their own row (DB column names)
 my @INDIVIDUAL_FIELDS = qw(
     cardnumber surname firstname preferred_name middle_name othernames userid
     email emailpro phone mobile phonepro
@@ -58,10 +58,40 @@ my @INDIVIDUAL_FIELDS = qw(
     borrowernotes sort1 sort2
 );
 
+=head2 new
+
+    my $indexer = Koha::SearchEngine::Database::Indexer::Patrons->new();
+
+Constructor. Returns a blessed instance of the Database patron indexer.
+
+=cut
+
 sub new {
     my ( $class, $params ) = @_;
     return bless $params // {}, $class;
 }
+
+=head2 index_exists
+
+=head2 create_index
+
+=head2 drop_index
+
+=head2 set_index_status_ok
+
+CLI compatibility stubs mirroring the Elasticsearch indexer interface so the
+shared C<patron_search_index.pl> tooling can drive either backend. For the
+database backend there is no separate index to create or track: C<index_exists>
+always returns true, C<create_index> and C<set_index_status_ok> are no-ops, and
+C<drop_index> truncates the C<patron_search_index> table.
+
+=cut
+
+# CLI compatibility stubs
+sub index_exists        { return 1 }
+sub drop_index          { my $self = shift; C4::Context->dbh->do("TRUNCATE TABLE patron_search_index"); return }
+sub create_index        { return }
+sub set_index_status_ok { return }
 
 =head2 index_patrons
 
@@ -129,6 +159,16 @@ sub rebuild {
     return $count;
 }
 
+=head2 _index_patron
+
+    $self->_index_patron( $dbh, $patron );
+
+Rebuilds the C<patron_search_index> rows for a single patron: deletes any
+existing rows, then inserts one row per individual field, per field group,
+per extended attribute, plus an aggregated C<all> row.
+
+=cut
+
 sub _index_patron {
     my ( $self, $dbh, $patron ) = @_;
 
@@ -168,7 +208,7 @@ sub _index_patron {
         my $value = $patron->$field;
         push @all_parts, $value if defined $value && $value ne '';
     }
-    push @all_parts, $patron->branchcode  // '';
+    push @all_parts, $patron->branchcode   // '';
     push @all_parts, $patron->categorycode // '';
     for my $attr ( $patron->extended_attributes->as_list ) {
         push @all_parts, $attr->attribute if defined $attr->attribute && $attr->attribute ne '';
