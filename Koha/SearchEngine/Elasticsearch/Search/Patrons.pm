@@ -23,6 +23,11 @@ use C4::Context;
 use Koha::Patrons;
 use Koha::Patron::Attribute::Types;
 use Koha::SearchEngine::Elasticsearch;
+use Koha::SearchEngine::Elasticsearch::Indexer::Patrons;
+use Koha::Exceptions::SearchEngine::Search;
+use Koha::Exceptions::Elasticsearch;
+
+use Try::Tiny qw( catch try );
 
 use Readonly qw( Readonly );
 
@@ -36,12 +41,12 @@ Koha::SearchEngine::Elasticsearch::Search::Patrons - Patron search via ES
 
     my $searcher = Koha::SearchEngine::Elasticsearch::Search::Patrons->new();
     my $results  = $searcher->search_patrons(
-        query    => "smith",
-        page     => 1,
-        per_page => 20,
-        order_by => "-surname",
-        filters  => { branchcode => "CPL" },
-        library  => $logged_in_library,
+        query                => "smith",
+        page                 => 1,
+        per_page             => 20,
+        order_by             => "-surname",
+        filters              => { library_id => "CPL" },
+        restricted_libraries => \@libraries_user_can_see,
     );
 
 =cut
@@ -65,13 +70,14 @@ sub new {
 =head2 search_patrons
 
     my $results = $searcher->search_patrons(
-        query    => $q,
-        fields   => \@fields,       # optional, overrides default
-        page     => $page,
-        per_page => $per_page,
-        order_by => $order_by,       # e.g. "-surname", "+ext_attr_DEPT"
-        filters  => \%filters,       # facet filters
-        library  => $branchcode,     # caller's library for scoping
+        query                => $q,
+        fields               => \@fields,       # optional, overrides default (validated against searchable set)
+        page                 => $page,
+        per_page             => $per_page,
+        order_by             => $order_by,       # e.g. "-surname", "+ext_attr_DEPT"
+        filters              => \%filters,       # facet filters (library_id, category_id, restricted, ext_attr_*)
+        column_filters       => \%column_filters,# per-field filters
+        restricted_libraries => \@library_ids,   # libraries the caller may see (scoping)
     );
 
 Returns hashref: { total => $n, hits => \@patron_ids, facets => \%facets }
@@ -81,27 +87,40 @@ Returns hashref: { total => $n, hits => \@patron_ids, facets => \%facets }
 sub search_patrons {
     my ( $self, %args ) = @_;
 
-    my $query_string   = $args{query};
-    my $page           = $args{page}     // 1;
-    my $per_page       = $args{per_page} // 20;
-    my $order_by       = $args{order_by};
-    my $match          = $args{match}          // 'contains';
-    my $column_filters = $args{column_filters} // {};
-    my $filters        = $args{filters}        // {};
-    my $library        = $args{library};
-    my $fields         = $args{fields};
+    my $query_string         = $args{query};
+    my $page                 = $args{page}     // 1;
+    my $per_page             = $args{per_page} // 20;
+    my $order_by             = $args{order_by};
+    my $match                = $args{match}                // 'contains';
+    my $column_filters       = $args{column_filters}       // {};
+    my $filters              = $args{filters}              // {};
+    my $restricted_libraries = $args{restricted_libraries} // [];
+    my $fields               = $args{fields};
+
+    # Security boundary: caller-supplied field names (search fields, filter keys
+    # and sort keys) must all belong to the resolved searchable set. Without this
+    # a caller with only list_borrowers could reach non-staff_searchable
+    # attributes by naming them explicitly via fields/filters/_order_by.
+    my %allowed = $self->_searchable_fields;
+
+    if ( $fields && @$fields ) {
+        $self->_assert_searchable( \%allowed, @$fields );
+    }
+    $self->_assert_searchable( \%allowed, keys %$filters )        if $filters        && %$filters;
+    $self->_assert_searchable( \%allowed, keys %$column_filters ) if $column_filters && %$column_filters;
+    $self->_assert_searchable( \%allowed, split /,/, $order_by ) if defined $order_by && $order_by ne '';
 
     # Resolve search fields
-    my @search_fields = $fields ? @$fields : $self->_resolve_search_fields($library);
+    my @search_fields = $fields ? @$fields : $self->_resolve_search_fields();
 
     # Build the query body
     my $body = $self->_build_query(
-        query_string   => $query_string,
-        search_fields  => \@search_fields,
-        match          => $match,
-        column_filters => $column_filters,
-        filters        => $filters,
-        library        => $library,
+        query_string         => $query_string,
+        search_fields        => \@search_fields,
+        match                => $match,
+        column_filters       => $column_filters,
+        filters              => $filters,
+        restricted_libraries => $restricted_libraries,
     );
 
     # Sorting
@@ -118,11 +137,22 @@ sub search_patrons {
 
     # Execute
     my $elasticsearch = $self->get_elasticsearch();
-    my $response      = $elasticsearch->search(
-        index            => $self->index_name,
-        track_total_hits => \1,
-        body             => $body,
-    );
+    my $response      = try {
+        $elasticsearch->search(
+            index            => $self->index_name,
+            track_total_hits => \1,
+            body             => $body,
+        );
+    } catch {
+
+        # Surface ES query/transport errors as a domain exception so the
+        # controller can return the documented 400 invalid_query instead of a
+        # bare 500 (e.g. a match_phrase_prefix issued against a date field).
+        Koha::Exceptions::Elasticsearch::BadResponse->throw(
+            type    => ( ref $_ && $_->{type} ) // 'query_error',
+            details => "$_",
+        );
+    };
 
     # Parse results
     my $total =
@@ -163,7 +193,7 @@ Includes core fields + extended attribute fields visible to the library.
 =cut
 
 sub _resolve_search_fields {
-    my ( $self, $library ) = @_;
+    my ($self) = @_;
 
     # Honor DefaultPatronSearchFields syspref for the "Standard" field set.
     # The syspref is shared with the legacy DB-backed patron search and stores
@@ -189,7 +219,7 @@ sub _resolve_search_fields {
     # Add only searched_by_default extended attribute fields to the default search
     my $attr_types_rs = Koha::Patron::Attribute::Types->search_with_library_limits(
         { staff_searchable => 1, searched_by_default => 1 },
-        {}, $library
+        {}, undef
     );
 
     while ( my $type = $attr_types_rs->next ) {
@@ -203,6 +233,80 @@ sub _resolve_search_fields {
     return @fields;
 }
 
+=head2 _searchable_fields
+
+    my %allowed = $self->_searchable_fields;
+
+Returns the authoritative set of field names a caller is permitted to search,
+filter or sort on, as a hash (field name => 1) for fast lookup. This is the
+security boundary for staff-supplied C<fields>, C<filters> and C<_order_by>:
+it comprises the core fields declared in the patron mappings plus the
+C<ext_attr_E<lt>codeE<gt>> (and C<_description>) fields for extended attribute
+types that are C<staff_searchable> and visible to the caller's library.
+
+Attribute types that are not staff_searchable are deliberately excluded, so a
+caller cannot reach them by naming the field explicitly.
+
+=cut
+
+sub _searchable_fields {
+    my ($self) = @_;
+
+    return %{ $self->{_searchable_fields_cache} } if $self->{_searchable_fields_cache};
+
+    my %allowed;
+
+    # Core fields: everything declared in the patron mappings (API field names).
+    my $indexer  = Koha::SearchEngine::Elasticsearch::Indexer::Patrons->new();
+    my $mappings = $indexer->get_elasticsearch_mappings();
+    $allowed{$_} = 1 for keys %{ $mappings->{properties} // {} };
+
+    # Extended attributes: only those flagged staff_searchable and visible to
+    # the caller's library. Description sub-fields follow the same rule.
+    my $attr_types_rs =
+        Koha::Patron::Attribute::Types->search_with_library_limits( { staff_searchable => 1 }, {}, undef );
+    while ( my $type = $attr_types_rs->next ) {
+        $allowed{ "ext_attr_" . $type->code } = 1;
+        $allowed{ "ext_attr_" . $type->code . "_description" } = 1
+            if $type->authorised_value_category;
+    }
+
+    $self->{_searchable_fields_cache} = \%allowed;
+    return %allowed;
+}
+
+=head2 _assert_searchable
+
+    $self->_assert_searchable( \%allowed, @field_names );
+
+Throws C<Koha::Exceptions::SearchEngine::Search::InvalidQuery> if any of the
+given field names (composite C<a:b> keys are split on ':') is not part of the
+allowed set. Used to validate caller-supplied fields, filter keys and sort keys.
+
+=cut
+
+sub _assert_searchable {
+    my ( $self, $allowed, @names ) = @_;
+
+    my @invalid;
+    for my $name (@names) {
+        next unless defined $name && $name ne '';
+        for my $part ( split /:/, $name ) {
+            $part =~ s/^[-+]//;        # strip sort direction markers
+            $part =~ s/^\s+|\s+$//g;
+            next if $part eq '';
+            push @invalid, $part unless $allowed->{$part};
+        }
+    }
+
+    Koha::Exceptions::SearchEngine::Search::InvalidQuery->throw(
+        error          => "Invalid or non-searchable field(s): " . join( ', ', @invalid ),
+        invalid_fields => \@invalid,
+    ) if @invalid;
+
+    return 1;
+}
+
 =head2 _build_query
 
 Builds the ES query body with multi_match + filters + aggregations.
@@ -212,12 +316,12 @@ Builds the ES query body with multi_match + filters + aggregations.
 sub _build_query {
     my ( $self, %args ) = @_;
 
-    my $query_string   = $args{query_string};
-    my $search_fields  = $args{search_fields};
-    my $match          = $args{match}          // 'contains';
-    my $column_filters = $args{column_filters} // {};
-    my $filters        = $args{filters};
-    my $library        = $args{library};
+    my $query_string         = $args{query_string};
+    my $search_fields        = $args{search_fields};
+    my $match                = $args{match}          // 'contains';
+    my $column_filters       = $args{column_filters} // {};
+    my $filters              = $args{filters};
+    my $restricted_libraries = $args{restricted_libraries} // [];
 
     # Main text query
     my $must;
@@ -284,9 +388,9 @@ sub _build_query {
         }
     }
 
-    # Library scoping (IndependentBranches)
-    if ( $library && C4::Context->preference('IndependentBranches') ) {
-        push @filter_clauses, { term => { 'library_id.facet' => $library } };
+    # Library scoping
+    if (@$restricted_libraries) {
+        push @filter_clauses, { terms => { 'library_id.facet' => $restricted_libraries } };
     }
 
     # Column-level field filters (additive, each becomes a must clause)

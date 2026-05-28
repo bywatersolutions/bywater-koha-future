@@ -23,6 +23,8 @@ use Mojo::JSON;
 use C4::Context;
 use Koha::Patrons;
 use Koha::SearchEngine::Elasticsearch::Search::Patrons;
+use Koha::Exceptions::SearchEngine::Search;
+use Koha::Exceptions::Elasticsearch;
 
 use Try::Tiny qw( catch try );
 
@@ -85,7 +87,13 @@ sub search {
 
         # JSON filters param (supports ext_attr_{CODE} and others)
         if ( my $filters_json = $c->param('filters') ) {
-            my $extra = eval { Mojo::JSON::decode_json($filters_json) } // {};
+            my $extra = eval { Mojo::JSON::decode_json($filters_json) };
+            if ( $@ || ref $extra ne 'HASH' ) {
+                return $c->render(
+                    status  => 400,
+                    openapi => { error => "Malformed 'filters' parameter: expected a JSON object" },
+                );
+            }
             for my $key ( keys %$extra ) {
                 if ( $key =~ /^ext_attr_/ || $key =~ /:/ ) {
                     $column_filters->{$key} = $extra->{$key};
@@ -95,19 +103,19 @@ sub search {
             }
         }
 
-        my $library = $c->stash('koha.user')->branchcode;
+        my @restricted_libraries = $c->stash('koha.user')->libraries_where_can_see_patrons;
 
         my $searcher = Koha::SearchEngine::Elasticsearch::Search::Patrons->new();
         my $results  = $searcher->search_patrons(
-            query          => $q,
-            fields         => $fields ? [ split /\|/, $fields ] : undef,
-            match          => $match,
-            column_filters => $column_filters,
-            page           => $page,
-            per_page       => $per_page,
-            order_by       => $order_by,
-            filters        => $filters,
-            library        => $library,
+            query                => $q,
+            fields               => $fields ? [ split /\|/, $fields ] : undef,
+            match                => $match,
+            column_filters       => $column_filters,
+            page                 => $page,
+            per_page             => $per_page,
+            order_by             => $order_by,
+            filters              => $filters,
+            restricted_libraries => \@restricted_libraries,
         );
 
         # Hydrate patron objects from DB
@@ -148,7 +156,27 @@ sub search {
             },
         );
     } catch {
-        $c->unhandled_exception($_);
+        my $error = $_;
+
+        # A caller-supplied invalid/non-searchable field is a client error.
+        if ( ref $error && $error->isa('Koha::Exceptions::SearchEngine::Search::InvalidQuery') ) {
+            return $c->render(
+                status  => 400,
+                openapi => { error => $error->message, error_code => 'invalid_query' },
+            );
+        }
+
+        # A malformed query reaching the search engine (e.g. a filter that does
+        # not make sense for the target field type) is also a client error,
+        # returned as the documented 400 rather than a bare 500.
+        if ( ref $error && $error->isa('Koha::Exceptions::Elasticsearch::BadResponse') ) {
+            return $c->render(
+                status  => 400,
+                openapi => { error => "Invalid search query", error_code => 'invalid_query' },
+            );
+        }
+
+        $c->unhandled_exception($error);
     };
 }
 
