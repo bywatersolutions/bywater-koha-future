@@ -447,7 +447,7 @@ sub store {
         }
     );
 
-    $self->_es_index_patron();
+    $self->_search_engine_reindex();
 
     return $self;
 }
@@ -521,9 +521,9 @@ sub delete {
     # Remove from the search index only after the DB transaction has committed.
     # Doing it inside the transaction would leave the index inconsistent with
     # the database if the transaction rolled back (patron gone from the index
-    # but still present in the DB). _es_delete_patron re-enqueues an index job
+    # but still present in the DB). _search_engine_delete re-enqueues an index job
     # on failure so the index converges even if ES is transiently unavailable.
-    $self->_es_delete_patron;
+    $self->_search_engine_delete;
 
     return $self;
 }
@@ -972,7 +972,7 @@ sub merge_with {
     # The merged patrons are removed from the index by their own delete(); the
     # keeper's aggregated data (checkouts, fines, debarments) changed during the
     # merge, so reindex it once the transaction has committed.
-    $self->_es_index_patron();
+    $self->_search_engine_reindex();
 
     return $results;
 }
@@ -3005,7 +3005,7 @@ sub anonymize {
     foreach my $col (@columns) {
         $self->_anonymize_column( $col, $mandatory->{ lc $col } );
     }
-    $self->_es_delete_patron;
+    $self->_search_engine_delete;
 
     $self->anonymized(1)->store;
 }
@@ -4302,26 +4302,26 @@ sub _use_es_patron_index {
     return Koha::BackgroundJob::UpdateElasticPatronIndex->patron_indexing_enabled;
 }
 
-=head3 _es_index_patron
+=head3 _search_engine_reindex
 
 Enqueue a background job to index this patron in Elasticsearch (if enabled).
 
 =cut
 
-sub _es_index_patron {
+sub _search_engine_reindex {
     my ($self) = @_;
     return unless $self->_use_es_patron_index;
     require Koha::BackgroundJob::UpdateElasticPatronIndex;
     Koha::BackgroundJob::UpdateElasticPatronIndex->new->enqueue( { patron_ids => [ $self->borrowernumber ] } );
 }
 
-=head3 _es_delete_patron
+=head3 _search_engine_delete
 
 Remove this patron from the Elasticsearch index (if enabled).
 
 =cut
 
-sub _es_delete_patron {
+sub _search_engine_delete {
     my ($self) = @_;
     return unless $self->_use_es_patron_index;
     require Koha::SearchEngine::Indexer::Patrons;
