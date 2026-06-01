@@ -31,6 +31,14 @@ field-group targeting and weighted relevance scoring.
 
 =cut
 
+=head2 new
+
+    my $searcher = Koha::SearchEngine::Database::Search::Patrons->new();
+
+Constructor. Returns a blessed instance of the Database patron search backend.
+
+=cut
+
 sub new {
     my ( $class, $params ) = @_;
     return bless $params // {}, $class;
@@ -47,15 +55,15 @@ Returns hashref: { total => $n, hits => \@patron_ids, index_data => {}, facets =
 sub search_patrons {
     my ( $self, %args ) = @_;
 
-    my $query          = $args{query};
-    my $page           = $args{page}           // 1;
-    my $per_page       = $args{per_page}       // 20;
-    my $order_by       = $args{order_by};
-    my $match          = $args{match}          // 'starts_with';
-    my $column_filters = $args{column_filters} // {};
-    my $filters        = $args{filters}        // {};
+    my $query                = $args{query};
+    my $page                 = $args{page}     // 1;
+    my $per_page             = $args{per_page} // 20;
+    my $order_by             = $args{order_by};
+    my $match                = $args{match}                // 'starts_with';
+    my $column_filters       = $args{column_filters}       // {};
+    my $filters              = $args{filters}              // {};
     my $restricted_libraries = $args{restricted_libraries} // [];
-    my $fields         = $args{fields};
+    my $fields               = $args{fields};
 
     my $dbh = C4::Context->dbh;
 
@@ -79,15 +87,12 @@ sub search_patrons {
             $escaped =~ s/([+\-><()~*"@])/\\$1/g;
             push @bind, @search_groups, "*${escaped}*";
         } else {
-            # starts_with: prefix match via LIKE on the index content
-            push @where, qq{
-                b.borrowernumber IN (
-                    SELECT psi.patron_id FROM patron_search_index psi
-                    WHERE psi.field_group IN ($group_placeholders)
-                      AND psi.content LIKE ?
-                )
-            };
-            push @bind, @search_groups, "$query%";
+
+            # starts_with: LIKE prefix on borrowers columns directly
+            my @like_fields = qw(surname firstname preferred_name middle_name othernames cardnumber userid email);
+            my @or          = map { "b.$_ LIKE ?" } @like_fields;
+            push @where, '(' . join( ' OR ', @or ) . ')';
+            push @bind,  map { "$query%" } @like_fields;
         }
     }
 
@@ -107,7 +112,7 @@ sub search_patrons {
     }
 
     # Library scoping
-    if ( @$restricted_libraries ) {
+    if (@$restricted_libraries) {
         my $ph = join ',', ('?') x @$restricted_libraries;
         push @where, "b.branchcode IN ($ph)";
         push @bind,  @$restricted_libraries;
@@ -119,6 +124,7 @@ sub search_patrons {
         my @fields = split /:/, $field;
         my @or;
         for my $f (@fields) {
+
             # Search the index table for this field group
             push @or, qq{
                 b.borrowernumber IN (
@@ -134,9 +140,7 @@ sub search_patrons {
     my $where_sql = @where ? 'WHERE ' . join( ' AND ', @where ) : '';
 
     # Count
-    my ($total) = $dbh->selectrow_array(
-        "SELECT COUNT(*) FROM borrowers b $where_sql", undef, @bind
-    );
+    my ($total) = $dbh->selectrow_array( "SELECT COUNT(*) FROM borrowers b $where_sql", undef, @bind );
 
     # Sorting
     my $order_sql = $self->_build_order_sql($order_by);
@@ -150,12 +154,22 @@ sub search_patrons {
     );
 
     return {
-        total   => $total // 0,
-        hits    => $ids // [],
+        total      => $total // 0,
+        hits       => $ids   // [],
         index_data => {},
-        facets  => {},
+        facets     => {},
     };
 }
+
+=head2 _resolve_search_groups
+
+    my @groups = $self->_resolve_search_groups( $fields );
+
+Returns the list of C<patron_search_index> field groups to search. When explicit
+C<$fields> are given they are used as-is; otherwise the default set of groups is
+returned.
+
+=cut
 
 sub _resolve_search_groups {
     my ( $self, $fields ) = @_;
@@ -168,9 +182,7 @@ sub _resolve_search_groups {
     my @groups = ('standard');
 
     if ( C4::Context->preference('ExtendedPatronAttributes') ) {
-        my $attr_types = Koha::Patron::Attribute::Types->search(
-            { staff_searchable => 1, searched_by_default => 1 }
-        );
+        my $attr_types = Koha::Patron::Attribute::Types->search( { staff_searchable => 1, searched_by_default => 1 } );
         while ( my $type = $attr_types->next ) {
             push @groups, '_ATTR_' . $type->code;
         }
@@ -178,6 +190,15 @@ sub _resolve_search_groups {
 
     return @groups;
 }
+
+=head2 _build_order_sql
+
+    my $sql = $self->_build_order_sql( $order_by );
+
+Builds the SQL C<ORDER BY> clause from the caller-supplied sort specification,
+defaulting to surname then firstname when none is given.
+
+=cut
 
 sub _build_order_sql {
     my ( $self, $order_by ) = @_;

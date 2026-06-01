@@ -61,7 +61,7 @@ sub search {
         # Column-level field filters (additive)
         my $column_filters = {};
         my @known_fields   = qw( cardnumber surname firstname patron_name phone date_of_birth
-            library_id category_id expiry_date staff_notes email address city );
+            expiry_date staff_notes email address city );
         for my $f (@known_fields) {
             my $val = $c->param($f);
             $column_filters->{$f} = $val if defined $val && $val ne '';
@@ -133,7 +133,7 @@ sub search {
             my $indexed = $index_data->{ $_->borrowernumber } // {};
             $api->{account_balance} = $indexed->{account_balance} // $_->account->balance + 0;
             $api->{checkouts_count} = $indexed->{checkouts_count} // $_->checkouts->count;
-            $api->{library} = {
+            $api->{library}         = {
                 library_id => $api->{library_id},
                 name       => $indexed->{library_name} // $_->library->branchname,
             };
