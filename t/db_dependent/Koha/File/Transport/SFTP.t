@@ -17,7 +17,7 @@
 
 use Modern::Perl;
 
-use Test::More tests => 9;
+use Test::More tests => 10;
 use Test::Exception;
 use Test::NoWarnings;
 use Test::Warn;
@@ -140,6 +140,8 @@ subtest 'scalar context and mutually exclusive authentication tests' => sub {
 subtest 'store() and _post_store_trigger() tests' => sub {
     plan tests => 2;
 
+    $schema->storage->txn_begin;
+
     my $transport = $builder->build_object(
         {
             class => 'Koha::File::Transports',
@@ -155,6 +157,8 @@ subtest 'store() and _post_store_trigger() tests' => sub {
 
     lives_ok { $transport->store } 'store() should complete without error';
     is( $post_store_called, 1, '_post_store_trigger() should be called' );
+
+    $schema->storage->txn_rollback;
 };
 
 subtest '_write_key_file() tests' => sub {
@@ -200,6 +204,8 @@ subtest '_write_key_file() tests' => sub {
 subtest 'connect() tests' => sub {
     plan tests => 2;
 
+    $schema->storage->txn_begin;
+
     my $transport = $builder->build_object(
         {
             class => 'Koha::File::Transports',
@@ -209,10 +215,15 @@ subtest 'connect() tests' => sub {
 
     can_ok( $transport, 'connect' );
     dies_ok { $transport->connect } 'connect() should die without proper setup';
+
+    $schema->storage->txn_rollback;
 };
 
 subtest 'upload_file() tests' => sub {
     plan tests => 1;
+
+    $schema->storage->txn_begin;
+
     my $transport = $builder->build_object(
         {
             class => 'Koha::File::Transports',
@@ -221,10 +232,62 @@ subtest 'upload_file() tests' => sub {
     );
 
     can_ok( $transport, 'upload_file' );
+
+    $schema->storage->txn_rollback;
+};
+
+subtest '_upload_file() copy_file_attrs tests' => sub {
+    plan tests => 4;
+
+    $schema->storage->txn_begin;
+
+    # Mock the SFTP connection and capture the options passed to put()
+    my %put_options;
+    my $undef;
+    my $mock_sftp = Test::MockModule->new('Net::SFTP::Foreign');
+    $mock_sftp->mock( 'new', sub { my $class = shift; return bless {}, $class; } );
+    $mock_sftp->mock(
+        'put',
+        sub {
+            my ( $connection, $local_file, $remote_file, %options ) = @_;
+            %put_options = %options;
+            return 1;
+        }
+    );
+    $mock_sftp->mock( 'error',  sub { return $undef; } );
+    $mock_sftp->mock( 'status', sub { return 0; } );
+    $mock_sftp->mock( 'cwd',    sub { return '/'; } );
+
+    my $transport_on = $builder->build_object(
+        {
+            class => 'Koha::File::Transports',
+            value => { transport => 'sftp', password => undef, key_file => undef, copy_file_attrs => 1 }
+        }
+    );
+    $transport_on->connect;
+    $transport_on->_upload_file( '/tmp/local_file', 'remote_file' );
+    is( $put_options{copy_perm}, 1, 'copy_file_attrs on: put() copies permissions' );
+    is( $put_options{copy_time}, 1, 'copy_file_attrs on: put() copies timestamps' );
+
+    my $transport_off = $builder->build_object(
+        {
+            class => 'Koha::File::Transports',
+            value => { transport => 'sftp', password => undef, key_file => undef, copy_file_attrs => 0 }
+        }
+    );
+    $transport_off->connect;
+    $transport_off->_upload_file( '/tmp/local_file', 'remote_file' );
+    is( $put_options{copy_perm}, 0, 'copy_file_attrs off: put() does not copy permissions' );
+    is( $put_options{copy_time}, 0, 'copy_file_attrs off: put() does not copy timestamps' );
+
+    $schema->storage->txn_rollback;
 };
 
 subtest 'download_file() tests' => sub {
     plan tests => 1;
+
+    $schema->storage->txn_begin;
+
     my $transport = $builder->build_object(
         {
             class => 'Koha::File::Transports',
@@ -233,10 +296,15 @@ subtest 'download_file() tests' => sub {
     );
 
     can_ok( $transport, 'download_file' );
+
+    $schema->storage->txn_rollback;
 };
 
 subtest 'change_directory() tests' => sub {
     plan tests => 1;
+
+    $schema->storage->txn_begin;
+
     my $transport = $builder->build_object(
         {
             class => 'Koha::File::Transports',
@@ -245,6 +313,8 @@ subtest 'change_directory() tests' => sub {
     );
 
     can_ok( $transport, 'change_directory' );
+
+    $schema->storage->txn_rollback;
 };
 
 subtest 'list_files() tests' => sub {
